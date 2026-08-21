@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HAVEN-9</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%230a0c0e%27/%3E%3Ccircle cx=%278%27 cy=%278%27 r=%274%27 fill=%27%235AB86A%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/shared/base.css">
+<link rel="stylesheet" href="/bigscreen/bigscreen.css">
+</head>
+<body>
+<div class="screen">
+
+  <!-- TOP BAR -->
+  <header class="top">
+    <div class="core-dial">
+      <svg viewBox="0 0 120 120" class="dial">
+        <circle class="dial-track" cx="60" cy="60" r="50"></circle>
+        <circle class="dial-arc" id="dial-arc" cx="60" cy="60" r="50"
+                transform="rotate(-90 60 60)"></circle>
+      </svg>
+      <div class="dial-inner">
+        <b id="core-value">100</b>
+        <span>CORE</span>
+      </div>
+    </div>
+    <div class="title">
+      <h1>HAVEN-9</h1>
+      <div class="sub">SECTOR CONTINUITY MONITOR</div>
+    </div>
+    <div class="tempo">
+      <div class="round" id="round">R0</div>
+      <div class="clock" id="clock">--:--</div>
+      <div class="mode" id="mode">BRIEFING</div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HAVEN-9 CROSS SECTION -->
+    <section class="map">
+      <svg viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet" id="cross-section">
+        <defs>
+          <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#14181c"/>
+            <stop offset="55%"  stop-color="#0e1215"/>
+            <stop offset="100%" stop-color="#0a0d10"/>
+          </linearGradient>
+          <radialGradient id="coreGlow">
+            <stop offset="0%"   stop-color="#E8B33A" stop-opacity="0.55"/>
+            <stop offset="60%"  stop-color="#E8853A" stop-opacity="0.16"/>
+            <stop offset="100%" stop-color="#E8853A" stop-opacity="0"/>
+          </radialGradient>
+          <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)"
+                   patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#1c2228" stroke-width="2.5"/>
+          </pattern>
+        </defs>
+
+        <!-- bedrock -->
+        <rect x="0" y="0" width="1000" height="640" fill="url(#rock)"/>
+        <rect x="0" y="64" width="1000" height="576" fill="url(#hatch)" opacity="0.5"/>
+
+        <!-- dead surface -->
+        <path class="surface" d="M0 62 L58 55 L96 63 L150 50 L212 60 L268 47 L330 58
+                                 L392 52 L452 62 L516 49 L578 60 L640 51 L704 62
+                                 L764 53 L826 63 L888 52 L946 61 L1000 55 L1000 0 L0 0 Z"/>
+        <text class="surface-label" x="500" y="30">SURFACE — UNINHABITABLE · 40 YEARS</text>
+        <line class="depth-line" x1="0" y1="82" x2="1000" y2="82"/>
+        <text class="depth-label" x="14" y="98">−300 M</text>
+
+        <!-- central access shaft -->
+        <rect class="shaft" x="486" y="104" width="28" height="404"/>
+        <g class="rungs" id="rungs"></g>
+
+        <!-- tunnels (TRN owns these) -->
+        <g class="tunnels">
+          <line x1="420" y1="172" x2="486" y2="172"/><line x1="514" y1="172" x2="580" y2="172"/>
+          <line x1="420" y1="300" x2="486" y2="300"/><line x1="514" y1="300" x2="580" y2="300"/>
+          <line x1="420" y1="428" x2="486" y2="428"/><line x1="514" y1="428" x2="580" y2="428"/>
+          <line x1="500" y1="508" x2="500" y2="540"/>
+        </g>
+
+        <!-- sector caverns -->
+        <g id="zones">
+          <g class="zone" data-sector="COM" data-x="285" data-y="172">
+            <rect x="150" y="122" width="270" height="100" rx="6"/>
+          </g>
+          <g class="zone" data-sector="AGR" data-x="715" data-y="172">
+            <rect x="580" y="122" width="270" height="100" rx="6"/>
+          </g>
+          <g class="zone" data-sector="WTR" data-x="285" data-y="300">
+            <rect x="150" y="250" width="270" height="100" rx="6"/>
+          </g>
+          <g class="zone" data-sector="MED" data-x="715" data-y="300">
+            <rect x="580" y="250" width="270" height="100" rx="6"/>
+          </g>
+          <g class="zone" data-sector="POW" data-x="285" data-y="428">
+            <rect x="150" y="378" width="270" height="100" rx="6"/>
+          </g>
+          <g class="zone" data-sector="TRN" data-x="715" data-y="428">
+            <rect x="580" y="378" width="270" height="100" rx="6"/>
+          </g>
+        </g>
+
+        <!-- geothermal core -->
+        <circle class="core-glow" cx="500" cy="560" r="118" fill="url(#coreGlow)"/>
+        <circle class="core-ring" id="core-ring" cx="500" cy="560" r="54"/>
+        <circle class="core-body" id="core-body" cx="500" cy="560" r="42"/>
+        <text class="core-label" x="500" y="566">CORE</text>
+        <text class="core-depth" x="500" y="628">GEOTHERMAL TAP</text>
+      </svg>
+    </section>
+
+    <!-- RIGHT RAIL -->
+    <aside class="rail" id="rail"></aside>
+  </main>
+
+  <!-- TELEMETRY -->
+  <div class="telemetry">
+    <div class="tel-title">SENSOR FEED</div>
+    <div class="tel-rows" id="telemetry"></div>
+  </div>
+
+  <!-- TICKER -->
+  <footer class="ticker">
+    <div class="ticker-label">HAVEN-9 OPS</div>
+    <div class="ticker-viewport"><div class="ticker-track" id="ticker"></div></div>
+  </footer>
+
+  <!-- COUNCIL TAKEOVER -->
+  <div class="council-takeover hidden" id="council">
+    <div class="c-label">COUNCIL MODE</div>
+    <div class="c-clock" id="c-clock">5:00</div>
+    <div class="c-agenda" id="c-agenda">CONTINUITY ORDER DUE</div>
+    <div class="c-call">ALL LIAISONS + SECTOR CHIEFS TO THE CENTRE TABLE</div>
+  </div>
+
+</div>
+<script src="/shared/ws.js"></script>
+<script src="/bigscreen/bigscreen.js"></script>
+</body>
+</html>

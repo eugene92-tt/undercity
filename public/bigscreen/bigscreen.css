@@ -1,0 +1,175 @@
+/* Big screen — spec §6.2. Projector, dark, readable at 10 metres.
+   Brutalist industrial: amber/green on near-black. */
+
+body { background: #06080a; }
+.screen { display: flex; flex-direction: column; height: 100vh; position: relative; }
+
+/* -- top bar --------------------------------------------------------------- */
+
+.top {
+  display: grid; grid-template-columns: 150px 1fr auto; align-items: center;
+  gap: 24px; padding: 14px 28px; border-bottom: 2px solid #1c242c; background: #080b0e;
+}
+
+.core-dial { position: relative; width: 118px; height: 118px; }
+.dial { width: 100%; height: 100%; }
+.dial-track { fill: none; stroke: #1a2128; stroke-width: 11; }
+.dial-arc {
+  fill: none; stroke: var(--green); stroke-width: 11; stroke-linecap: butt;
+  stroke-dasharray: 314; stroke-dashoffset: 0;
+  transition: stroke-dashoffset 600ms ease, stroke 600ms ease;
+}
+.dial-arc.warn { stroke: var(--amber); }
+.dial-arc.critical { stroke: var(--red); }
+.dial-inner {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px;
+}
+.dial-inner b { font-size: 38px; font-weight: 700; line-height: 1; }
+.dial-inner span { font-size: 10px; letter-spacing: 0.3em; color: var(--ink-faint); }
+
+.title h1 { font-size: 40px; letter-spacing: 0.34em; line-height: 1; }
+.title .sub { font-size: 11px; letter-spacing: 0.36em; color: var(--ink-faint); margin-top: 6px; }
+
+.tempo { text-align: right; }
+.tempo .round { font-size: 28px; font-weight: 700; letter-spacing: 0.16em; color: var(--amber); }
+.tempo .clock { font-size: 52px; font-weight: 700; line-height: 1; letter-spacing: 0.04em; }
+.tempo .clock.low { color: var(--red); animation: pulse 1s infinite; }
+.tempo .mode { font-size: 11px; letter-spacing: 0.28em; color: var(--ink-faint); margin-top: 4px; }
+
+/* -- main ------------------------------------------------------------------ */
+
+.main { flex: 1; display: grid; grid-template-columns: 1fr 320px; gap: 0; min-height: 0; }
+.map { min-height: 0; padding: 8px 0 8px 12px; }
+.map svg { width: 100%; height: 100%; }
+
+/* -- cross-section --------------------------------------------------------- */
+
+.surface { fill: #10151a; stroke: #2a343d; stroke-width: 2; }
+.surface-label {
+  fill: #3d4750; font-size: 12px; letter-spacing: 0.34em; text-anchor: middle;
+  font-family: var(--mono);
+}
+.depth-line { stroke: #1e262d; stroke-width: 1; stroke-dasharray: 5 7; }
+.depth-label { fill: #333d46; font-size: 11px; letter-spacing: 0.2em; font-family: var(--mono); }
+
+.shaft { fill: #0c1114; stroke: #212a31; stroke-width: 2; }
+.rungs line { stroke: #1a222a; stroke-width: 2; }
+.tunnels line { stroke: #232d35; stroke-width: 7; stroke-linecap: round; }
+
+/* zones: fill is driven from integrity in JS via the class */
+.zone rect {
+  stroke-width: 2.5; transition: fill 600ms ease, stroke 600ms ease;
+  fill: #16352088; stroke: var(--green);
+}
+.zone.warn     rect { fill: #3a2f1088; stroke: var(--amber); }
+.zone.critical rect { fill: #3a161688; stroke: var(--red); }
+.zone.dark     rect { fill: #07090b;   stroke: #2a2a2a; }
+.zone.brownout rect { fill: #33280c88; stroke: #8a6a20; stroke-dasharray: 9 5; }
+
+.zone.critical { animation: strobe 0.9s steps(2, end) infinite; }
+@keyframes strobe { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.42; } }
+
+.z-name {
+  font-family: var(--mono); font-size: 19px; font-weight: 700; letter-spacing: 0.16em;
+  text-anchor: middle; fill: var(--ink);
+}
+.z-code {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.28em;
+  text-anchor: middle; fill: var(--ink-faint);
+}
+.z-value {
+  font-family: var(--mono); font-size: 32px; font-weight: 700;
+  text-anchor: middle; fill: var(--ink);
+}
+.zone.dark .z-name, .zone.dark .z-value, .zone.dark .z-code { fill: #2f3439; }
+.z-stencil {
+  font-family: var(--mono); font-size: 21px; font-weight: 700; letter-spacing: 0.2em;
+  text-anchor: middle; fill: #454b50;
+}
+.z-faults { font-family: var(--mono); font-size: 12px; text-anchor: middle; fill: var(--red); }
+
+.core-ring {
+  fill: none; stroke: var(--amber); stroke-width: 3; opacity: 0.75;
+  stroke-dasharray: 6 9; transform-origin: 500px 560px; animation: spin 26s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.core-body { fill: #241a08; stroke: var(--amber); stroke-width: 3; transition: all 600ms ease; }
+.core-body.warn { stroke: #E8853A; }
+.core-body.critical { stroke: var(--red); fill: #2a0f0f; animation: pulse 1s infinite; }
+.core-label {
+  font-family: var(--mono); font-size: 15px; font-weight: 700; letter-spacing: 0.24em;
+  text-anchor: middle; fill: var(--amber);
+}
+.core-depth {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.3em;
+  text-anchor: middle; fill: #3d4750;
+}
+
+/* -- right rail ------------------------------------------------------------ */
+
+.rail {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px 16px 10px 6px;
+  overflow: hidden;
+}
+.rail-row { display: flex; flex-direction: column; gap: 4px; }
+.rail-head { display: flex; align-items: baseline; gap: 7px; }
+.rail-code { font-size: 15px; font-weight: 700; letter-spacing: 0.14em; min-width: 44px; }
+.rail-val { font-size: 20px; font-weight: 700; margin-left: auto; }
+.rail-wf { font-size: 11px; color: var(--ink-faint); letter-spacing: 0.06em; }
+.rail-row .bar { height: 13px; }
+.rail-status {
+  font-size: 9px; letter-spacing: 0.2em; color: var(--ink-faint);
+}
+.rail-status.CRITICAL { color: var(--red); }
+.rail-status.BROWNOUT { color: var(--amber); }
+.rail-status.DARK { color: #4a4a4a; }
+
+/* -- telemetry ------------------------------------------------------------- */
+
+.telemetry {
+  position: absolute; left: 22px; bottom: 68px; width: 232px;
+  background: rgba(8,11,14,0.9); border: 1px solid #1c242c; padding: 9px 11px;
+}
+.tel-title { font-size: 9px; letter-spacing: 0.3em; color: var(--ink-faint); margin-bottom: 6px; }
+.tel-row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+.tel-row .k { color: var(--ink-faint); letter-spacing: 0.06em; }
+.tel-row .v { color: var(--green); font-weight: 700; }
+
+/* -- ticker ---------------------------------------------------------------- */
+
+.ticker {
+  display: flex; align-items: center; height: 46px; border-top: 2px solid #1c242c;
+  background: #080b0e; overflow: hidden;
+}
+.ticker-label {
+  flex: none; padding: 0 16px; height: 100%; display: flex; align-items: center;
+  background: var(--amber); color: #17130a; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.24em;
+}
+.ticker-viewport { flex: 1; overflow: hidden; }
+.ticker-track {
+  display: inline-flex; align-items: center; gap: 34px; padding-left: 20px; white-space: nowrap;
+}
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.tick { font-size: 15px; letter-spacing: 0.06em; }
+.tick .tm { color: var(--ink-faint); margin-right: 8px; font-size: 12px; }
+.tick.resolve { color: var(--green); }
+.tick.fault   { color: var(--red); }
+.tick.status  { color: var(--amber); }
+.tick.council { color: var(--purple); }
+.tick.announce{ color: var(--ink); }
+
+/* -- council takeover ------------------------------------------------------ */
+
+.council-takeover {
+  position: absolute; inset: 0; background: rgba(5,7,9,0.955); z-index: 40;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+}
+.c-label { font-size: 20px; letter-spacing: 0.52em; color: var(--purple); }
+.c-clock { font-size: 210px; font-weight: 700; line-height: 0.94; color: var(--amber); }
+.c-clock.low { color: var(--red); animation: pulse 1s infinite; }
+.c-agenda { font-size: 34px; font-weight: 700; letter-spacing: 0.2em; }
+.c-call { font-size: 15px; letter-spacing: 0.26em; color: var(--ink-dim); margin-top: 10px; }
+
+.hidden { display: none !important; }
