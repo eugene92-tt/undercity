@@ -1,0 +1,5 @@
+node_modules/
+runlog.jsonl
+snapshot.json
+*.log
+.DS_Store

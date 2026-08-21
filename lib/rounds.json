@@ -1,0 +1,67 @@
+{
+  "note": "Derived from undercity-spec.md §8 (Round Configuration). Round lengths, inject counts and mechanics are transcribed from that table. Per-beat runbook rows are intentionally EMPTY — inject timings and artifact instructions ('hand F-201 card to POW') exist in no build input, and are authored from the facilitation design. The control panel renders whatever beats this file contains; the off-script inject library works regardless.",
+  "defaults": {
+    "upkeep_interval_s": 600,
+    "resolve_recovery": 5,
+    "lockout_s": 20,
+    "lockout_after_consecutive_invalid": 3,
+    "critical_below": 30,
+    "brownout_decay_per_min": 0.5,
+    "council_clock_s": 300,
+    "delay_window_s": 60,
+    "tick_ms": 10000,
+    "snapshot_ms": 10000
+  },
+  "rounds": [
+    {
+      "id": "R0",
+      "name": "Onboarding",
+      "length_s": 900,
+      "injects": "1 tutorial fault per sector (self-contained)",
+      "mechanics": "Everything, zero stakes",
+      "purpose": "Interface fluency; role self-assignment observation",
+      "breather_after_s": 0,
+      "beats": []
+    },
+    {
+      "id": "R1",
+      "name": "Stable Ops",
+      "length_s": 1200,
+      "injects": "1-2 minor per sector, staggered",
+      "mechanics": "Intra-sector only",
+      "purpose": "Baseline capture — must feel comfortably manageable",
+      "breather_after_s": 300,
+      "beats": []
+    },
+    {
+      "id": "R2",
+      "name": "Interdependence",
+      "length_s": 1800,
+      "injects": "Cross-sector cascades x4-5; 1 false alarm; discrepancy live",
+      "mechanics": "Transfers, liaisons, Council #1 at ~18:00",
+      "purpose": "First stress delta; information-sharing latency",
+      "breather_after_s": 300,
+      "beats": []
+    },
+    {
+      "id": "R3",
+      "name": "Core Failure",
+      "length_s": 1800,
+      "injects": "Critical stack x3; Core drops to 60% at 05:00; Continuity Order due 25:00",
+      "mechanics": "Triage, irreversibility, brownouts",
+      "purpose": "Peak stress; values conflict; decision under deadline",
+      "breather_after_s": 0,
+      "beats": []
+    },
+    {
+      "id": "R4",
+      "name": "Aftershock",
+      "length_s": 1500,
+      "injects": "4 novel-combination faults + 1 mini-triage",
+      "mechanics": "Same systems, fresh crisis",
+      "purpose": "Post-measurement — the delta is the product",
+      "breather_after_s": 0,
+      "beats": []
+    }
+  ]
+}
