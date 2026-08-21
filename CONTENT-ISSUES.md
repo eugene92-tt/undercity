@@ -68,8 +68,26 @@ and the resolution code formula (`=J23&"-"&TEXT(L23,"000")`) is untouched.
 
 ### Status
 
-Not applied. The three JSON fixtures in `content/` are byte-identical to the
-exporter output supplied with the build. Awaiting the content owner's decision.
+**Not applied — and it cannot be applied from a headless environment.**
+
+The three JSON fixtures in `content/` are byte-identical to the exporter output
+supplied with the build (verified by re-running the exporter against the
+matrix: all three files match exactly).
+
+The fix must be made on a machine with Excel or LibreOffice. Editing the
+workbook with `openpyxl` writes the string correctly but discards the cached
+values of every formula cell, which is precisely the corruption the exporter
+now refuses to process — see the exporter fix below. LibreOffice headless is
+unavailable in this environment, so there is no way to restore the cache after
+a scripted edit.
+
+**To apply it:** open `tools/undercity-crossref-matrix.xlsx`, sheet `Faults`,
+find the `F-208` row, change column E from "AGR West" to "AGR East", save
+(which recalculates), then run `npm run export-content`. The only change in
+the regenerated fixtures will be that one flavour string — `spec_refs` and
+`valid_codes` are already correct and the resolution-code formula is
+untouched. `npm test` then expects zero warnings instead of one; update
+`test/validate.test.js` accordingly.
 
 ---
 
