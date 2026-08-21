@@ -73,6 +73,52 @@ exporter output supplied with the build. Awaiting the content owner's decision.
 
 ---
 
+## 🔧 FIXED — exporter accepted an uncalculated workbook silently
+
+**Severity: would have shipped an unplayable build with a ✓.**
+
+`export_faults.py` classified a fault as a false alarm whenever its resolution
+code cell read empty:
+
+```python
+is_false_alarm = rescode is None or "NO CODE" in rescode
+```
+
+But an empty cell does not mean "false alarm". In a healthy workbook a genuine
+false alarm is authored as the literal string `NO CODE (false alarm)`, while a
+real fault's code is the formula `=J23&"-"&TEXT(L23,"000")`. `openpyxl` reads
+formulas via their **cached** values, and that cache is discarded whenever the
+workbook is written by a script rather than by Excel or LibreOffice.
+
+So a single scripted edit to any cell turned **all 36 faults into codeless
+ghosts**, and both safety nets failed open:
+
+- the malformed-code check (`"did you run recalc.py?"`) only inspects faults
+  that are *not* false alarms, so it never ran;
+- the Validation sheet is itself formula-driven, so it read as `0 checks OK`
+  rather than as a failure.
+
+The exporter printed `✓ wrote content/faults.json (36 faults…)` and exited 0.
+Loading that content would have given every team an unsolvable alert.
+
+**Fixed** in `tools/export_faults.py`, implementing what its own docstring
+already promised ("Aborts on failed validation or unrecalculated formulas"):
+
+1. only the explicit `NO CODE` marker declares a false alarm; an empty cell is
+   now a hard error naming the recalculation step;
+2. a Validation sheet yielding zero readable checks is an error, not a pass;
+3. a fault carrying a procedure but no resolution code is an error.
+
+Verified both ways: against the healthy workbook the export is byte-identical
+to the shipped fixtures; against a script-written workbook it now aborts with
+exit 1 and writes nothing.
+
+**Practical note for content edits:** edit the matrix in Excel or LibreOffice
+so formulas recalculate on save. Editing it with `openpyxl` strips the cache,
+and the export will now correctly refuse to run.
+
+---
+
 ## ✅ Checked and cleared
 
 - **F-209 is not a defect.** Its flavour reads "North array dead; re-strike

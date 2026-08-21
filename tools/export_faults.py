@@ -135,7 +135,19 @@ for row in wb["Faults"].iter_rows(min_row=2, values_only=True):
      s1, v1, s2, v2, rescode, deadline, flags) = row[:17]
 
     rescode = clean(rescode)
-    is_false_alarm = rescode is None or "NO CODE" in rescode
+
+    # A false alarm is declared EXPLICITLY in the workbook ("NO CODE ..."). An
+    # empty cell is not a false alarm — it means the formula cache is missing,
+    # which happens whenever the workbook is written by a script rather than by
+    # Excel/LibreOffice. Treating None as a false alarm silently turns every
+    # fault in the deck into an unsolvable ghost, so it is a hard error.
+    is_false_alarm = rescode is not None and "NO CODE" in rescode
+
+    if rescode is None:
+        problems.append(
+            f"{code}: resolution code cell is empty — the workbook's formula cache is "
+            f"missing. Open it in Excel/LibreOffice, recalculate, and save before exporting."
+        )
 
     valid_codes = [] if is_false_alarm else [rescode] + ALT_CODES.get(code, [])
 
@@ -188,6 +200,11 @@ for f in faults:
         continue
     if not f["valid_codes"]:
         problems.append(f"{f['code']}: no valid resolution code")
+    if f["procedure"] and not f["valid_codes"]:
+        problems.append(
+            f"{f['code']}: has procedure {f['procedure']} but no resolution code — "
+            f"a solvable fault cannot be codeless"
+        )
     for c in f["valid_codes"]:
         if not c or "None" in c:
             problems.append(f"{f['code']}: malformed resolution code '{c}' "
@@ -207,6 +224,14 @@ for f in faults:
 
 if 290 in [s["value"] for s in specs.values()]:
     problems.append("Reserved value 290 appears in a spec table — collides with the discrepancy seed")
+
+# The Validation sheet is entirely formula-driven, so an empty read means the
+# same lost cache — and it would otherwise pass as "0 checks OK".
+if not val_rows:
+    problems.append(
+        "Validation sheet produced no readable checks — the workbook's formula cache is "
+        "missing. Open it in Excel/LibreOffice, recalculate, and save before exporting."
+    )
 
 if problems:
     print("EXPORT ABORTED — fix these first:\n")
