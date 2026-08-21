@@ -160,3 +160,10 @@
 .dark-sub { font-size: 12px; letter-spacing: 0.22em; color: var(--ink-faint); }
 
 .hidden { display: none !important; }
+
+/* brownout: half delivery, shown against the full entitlement */
+#upkeep-cost s { color: var(--ink-faint); text-decoration-color: var(--red); }
+.brownout-tag {
+  font-style: normal; font-size: 9px; letter-spacing: 0.16em;
+  background: var(--amber); color: #17130a; padding: 1px 5px; margin-left: 4px;
+}

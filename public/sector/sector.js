@@ -119,10 +119,16 @@
 
     renderInventory(mine);
 
-    const cost = Object.entries(mine.upkeep_per_round)
-      .map(([k, v]) => `${v}${(RESOURCES.find((r) => r.key === k) || {}).glyph || k}`)
-      .join(' ');
-    $('upkeep-cost').textContent = cost;
+    // A brownout sector is on half rations; show what will actually arrive,
+    // with the full entitlement struck through beside it.
+    const glyph = (k) => (RESOURCES.find((r) => r.key === k) || {}).glyph || k;
+    const delivery = Object.entries(mine.upkeep_delivery || mine.upkeep_per_round)
+      .map(([k, v]) => `${v}${glyph(k)}`).join(' ');
+    const full = Object.entries(mine.upkeep_per_round)
+      .map(([k, v]) => `${v}${glyph(k)}`).join(' ');
+    $('upkeep-cost').innerHTML = mine.brownout
+      ? `<s>${U.escapeHtml(full)}</s> ${U.escapeHtml(delivery)} <em class="brownout-tag">BROWNOUT</em>`
+      : U.escapeHtml(delivery);
     const clock = $('upkeep-clock');
     clock.textContent = mine.upkeep_due_in_s > 0 ? U.mmss(mine.upkeep_due_in_s) : 'DUE';
     clock.classList.toggle('due', mine.upkeep_due_in_s <= 0);

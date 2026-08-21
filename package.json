@@ -2,15 +2,17 @@
   "name": "undercity",
   "version": "0.1.0",
   "private": true,
-  "description": "UNDERCITY — crisis leadership simulation server (HAVEN-9)",
+  "description": "UNDERCITY \u2014 crisis leadership simulation server (HAVEN-9)",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/",
+    "test": "node --test --test-concurrency=1 test/*.test.js",
     "export-content": "python3 tools/export_faults.py tools/undercity-crossref-matrix.xlsx content"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "express": "^4.19.2",
     "ws": "^8.18.0"
