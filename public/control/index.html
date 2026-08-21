@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UNDERCITY — Control</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%230a0c0e%27/%3E%3Ccircle cx=%278%27 cy=%278%27 r=%275%27 fill=%27%23E85A5A%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/shared/base.css">
+<link rel="stylesheet" href="/control/control.css">
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="left">
+      <h1>UNDERCITY <span class="sub">CONTROL</span></h1>
+      <span class="runid" id="run-id">—</span>
+      <span class="pill" id="mode-pill">—</span>
+      <span class="pill breather hidden" id="breather-pill">BREATHER</span>
+    </div>
+    <div class="right">
+      <span class="core">CORE <b id="core-value">—</b></span>
+      <button id="btn-snapshot">SNAPSHOT</button>
+      <button id="btn-export">EXPORT LOG</button>
+      <button id="btn-reset" class="danger">RESET RUN</button>
+      <div class="conn" id="conn" data-status="down">
+        <span class="dot"></span><span class="text" id="conn-text">CONNECTING</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="cols">
+
+    <!-- COL 1 — RUNBOOK + INJECT LIBRARY -->
+    <section class="col panel">
+      <h2 class="col-title">1 · RUNBOOK</h2>
+      <div class="runbook" id="runbook"></div>
+
+      <h2 class="col-title">OFF-SCRIPT — INJECT LIBRARY</h2>
+      <div class="filters">
+        <select id="f-round"><option value="">all rounds</option></select>
+        <select id="f-sector"><option value="">all sectors</option></select>
+        <select id="f-sev">
+          <option value="">all sev</option><option value="1">▲</option>
+          <option value="2">▲▲</option><option value="3">▲▲▲</option>
+        </select>
+      </div>
+      <input type="text" id="f-text" placeholder="filter by code or name…" autocomplete="off">
+      <div class="injects" id="injects"></div>
+    </section>
+
+    <!-- COL 2 — CITY STATE -->
+    <section class="col panel">
+      <h2 class="col-title">2 · CITY STATE</h2>
+      <div class="core-block">
+        <span class="label">Core integrity</span>
+        <div class="core-row">
+          <input type="range" id="core-slider" min="0" max="100" value="100">
+          <b id="core-readout">100</b>
+        </div>
+      </div>
+      <div class="sectors" id="sectors"></div>
+    </section>
+
+    <!-- COL 3 — TEMPO -->
+    <section class="col panel">
+      <h2 class="col-title">3 · TEMPO</h2>
+
+      <div class="block">
+        <span class="label">Round</span>
+        <div class="rounds" id="rounds"></div>
+      </div>
+
+      <div class="block">
+        <span class="label">Round clock</span>
+        <div class="clock-row">
+          <b id="round-clock">--:--</b>
+          <button data-clock="start">START</button>
+          <button data-clock="pause">PAUSE</button>
+          <button data-clock="add" data-sec="120">+2:00</button>
+        </div>
+      </div>
+
+      <div class="block">
+        <span class="label">Mode</span>
+        <div class="modes" id="modes"></div>
+        <div class="clock-row council-row">
+          <b id="council-clock">5:00</b>
+          <button data-council="start">START</button>
+          <button data-council="pause">PAUSE</button>
+          <button data-council="set" data-sec="300">RESET 5:00</button>
+        </div>
+      </div>
+
+      <div class="block">
+        <span class="label">Breather <em>pauses all decay + clocks</em></span>
+        <button id="btn-breather" class="wide">BREATHER OFF</button>
+      </div>
+
+      <div class="block">
+        <span class="label">Stings</span>
+        <div class="stings">
+          <button data-sting="klaxon">KLAXON</button>
+          <button data-sting="chime">CHIME</button>
+          <button data-sting="silence">SILENCE</button>
+        </div>
+        <div class="hint">R0 klaxon is the audio join key — fire it once, on the record.</div>
+      </div>
+
+      <div class="block">
+        <span class="label">Announce</span>
+        <div class="presets" id="presets"></div>
+        <div class="announce-row">
+          <input type="text" id="announce-text" placeholder="custom announcement…" autocomplete="off">
+          <button id="btn-announce">SEND</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- COL 4 — OBSERVATION PAD -->
+    <section class="col panel col-obs">
+      <h2 class="col-title">4 · OBSERVATION PAD</h2>
+      <div class="hint pad-hint">Eyes on the room. Tag first, type later.</div>
+
+      <div class="obs-sectors" id="obs-sectors"></div>
+      <div class="obs-tags" id="obs-tags"></div>
+
+      <textarea id="obs-note" rows="3" placeholder="note… (Enter to log, Shift+Enter for newline)"></textarea>
+      <button id="btn-observe" class="primary wide">LOG OBSERVATION</button>
+
+      <h2 class="col-title feed-title">LIVE FEED</h2>
+      <div class="feed" id="feed"></div>
+    </section>
+
+  </main>
+</div>
+<script src="/shared/ws.js"></script>
+<script src="/control/control.js"></script>
+</body>
+</html>
