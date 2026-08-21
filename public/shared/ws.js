@@ -80,6 +80,26 @@
     };
   }
 
+  /**
+   * Which session and sector this page belongs to, read from the URL.
+   *
+   *   /s/ABC123/sector/POW  -> hosted session ABC123, sector POW
+   *   /sector/POW           -> LAN mode, the implicit LOCAL session
+   *
+   * Keeping this in one place means the three views stay identical between
+   * hosted and travel-router deployments.
+   */
+  function context() {
+    const parts = location.pathname.split('/').filter(Boolean);
+    if (parts[0] === 's' && parts[1]) {
+      const session = parts[1].toUpperCase();
+      const sector = parts[2] === 'sector' && parts[3] ? parts[3].toUpperCase() : null;
+      return { session, sector, base: `/s/${session}` };
+    }
+    const sector = parts[0] === 'sector' && parts[1] ? parts[1].toUpperCase() : null;
+    return { session: 'LOCAL', sector, base: '' };
+  }
+
   // -- small shared helpers ---------------------------------------------------
 
   function mmss(seconds) {
@@ -136,5 +156,7 @@
     setTimeout(() => ctx.close().catch(() => {}), 2500);
   }
 
-  global.Undercity = { connect, mmss, integrityClass, severityPips, escapeHtml, playSting };
+  global.Undercity = {
+    connect, context, mmss, integrityClass, severityPips, escapeHtml, playSting,
+  };
 })(window);

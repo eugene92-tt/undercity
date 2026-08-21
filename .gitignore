@@ -3,3 +3,4 @@ runlog.jsonl
 snapshot.json
 *.log
 .DS_Store
+data/

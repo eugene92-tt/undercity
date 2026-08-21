@@ -12,6 +12,7 @@
  */
 (function controlPanel() {
   const U = window.Undercity;
+  const CTX = U.context();
   const TOKEN = new URLSearchParams(location.search).get('token') || '';
   const TAGS = ['DOMINANCE', 'WITHDRAWAL', 'SAFETY+', 'SAFETY-', 'DISCREPANCY-SPOTTED'];
   const MODES = ['BRIEFING', 'PLAY', 'COUNCIL', 'PAUSED', 'DEBRIEF'];
@@ -35,7 +36,7 @@
 
   // -- content (answer key; token-gated exactly like the socket) --------------
 
-  fetch(`/api/content?token=${encodeURIComponent(TOKEN)}`)
+  fetch(`/api/content?session=${encodeURIComponent(CTX.session)}&token=${encodeURIComponent(TOKEN)}`)
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error('forbidden'))))
     .then((data) => { content = data; buildStatics(); renderInjects(); renderRunbook(); })
     .catch(() => {
@@ -44,7 +45,7 @@
     });
 
   const socket = U.connect({
-    hello: { type: 'hello', role: 'control', token: TOKEN },
+    hello: { type: 'hello', role: 'control', session: CTX.session, token: TOKEN },
     onState: render,
     onStatus: setConnStatus,
     onMessage: (msg) => {

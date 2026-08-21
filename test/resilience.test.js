@@ -52,6 +52,8 @@ function boot(resume) {
       RESUME: resume,
       RUNLOG_PATH,
       SNAPSHOT_PATH,
+      DATA_DIR: path.join(runDir, 'data'),
+      MODE: 'lan',
     },
     stdio: 'ignore',
   });

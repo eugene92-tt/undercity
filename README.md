@@ -13,32 +13,97 @@ Where the two differ, **the contract wins** (spec §5.2).
 
 ---
 
-## Run it
+## Two ways to run it
+
+UNDERCITY runs in two modes from one codebase.
+
+### Hosted — the platform
+
+Many concurrent sessions, facilitator accounts, an admin panel that creates a
+session, names the six tables and hands each one a join link.
 
 ```bash
 npm install
-npm start
+npm run create-user -- you@example.com "Your Name"   # prints a password once
+npm start                                            # http://localhost:3000/admin
+```
+
+| Screen | URL |
+|---|---|
+| Admin | `/admin` |
+| Big screen | `/s/<CODE>/bigscreen` |
+| Control panel | `/s/<CODE>/control?token=…` |
+| A team's dashboard | `/j/<JOIN CODE>` → their own sector |
+
+Each team's join link resolves straight to their sector — nothing to pick and
+nothing to type on six laptops while a room fills up.
+
+### LAN — the travel router
+
+The original single-run behaviour, no accounts, bare URLs. **Keep using this
+whenever the venue's network is not yours.** The spec calls hotel WiFi *"the #1
+failure mode for this class of product"* (§5.1), and a hosted session dies with
+the venue's uplink.
+
+```bash
+MODE=lan npm start
 ```
 
 | Screen | URL | Count |
 |---|---|---|
-| Sector dashboard | `http://<host>:3000/sector/POW` … `/sector/COM` | 6 |
-| Big screen | `http://<host>:3000/bigscreen` | 1 |
-| Control panel | `http://<host>:3000/control?token=haven9` | 1 (a second is allowed) |
+| Sector dashboard | `/sector/POW` … `/sector/COM` | 6 |
+| Big screen | `/bigscreen` | 1 |
+| Control panel | `/control?token=haven9` | 1 (a second is allowed) |
 
 ```bash
-PORT=3000 FACILITATOR_TOKEN=haven9 npm start   # both default as shown
-RESUME=0 npm start                             # ignore any snapshot, start clean
-RUNLOG_PATH=/media/usb/run.jsonl npm start     # write the log straight to a stick
-npm test                                       # 63 tests, ~12s
+PORT=3000 FACILITATOR_TOKEN=haven9 MODE=lan npm start
+RUNLOG_PATH=/media/usb/run.jsonl MODE=lan npm start   # log straight to a stick
+npm test                                              # 78 tests, ~25s
 ```
 
-`RUNLOG_PATH` and `SNAPSHOT_PATH` both default to the repo root. Set them if
-you ever run two instances at once — otherwise the second overwrites the
-first's log and snapshot.
+### Environment
 
-Runs on a dedicated offline travel router. No internet is required during
-play, and none is used.
+| Variable | Default | Meaning |
+|---|---|---|
+| `MODE` | `lan` unless `DATA_DIR` is set | `hosted` or `lan` |
+| `DATA_DIR` | `./data` | SQLite file and one runlog per session |
+| `PORT` | `3000` | |
+| `FACILITATOR_TOKEN` | `haven9` | LAN mode control-panel token |
+| `SECURE_COOKIES` | on when `NODE_ENV=production` | `Secure` flag on the admin cookie |
+| `RUNLOG_PATH` / `SNAPSHOT_PATH` | under `DATA_DIR` | LAN mode only |
+
+---
+
+## Deploying (Render)
+
+`render.yaml` and the `Dockerfile` deploy the hosted mode as a single always-on
+service with a persistent disk.
+
+1. Push the repo and point Render at the blueprint.
+2. Render provisions a 5 GB disk at `/var/data` — SQLite and the run logs.
+3. Once live, open a shell on the service and create your first account:
+   ```
+   npm run create-user -- you@example.com "Your Name"
+   ```
+4. Sign in at `https://<your-service>/admin`.
+
+**Do not raise `numInstances` above 1.** Game state is authoritative in memory
+and broadcast to every client of a session (contract §0.1–0.2). A second
+instance would hold its own copy of every game, and clients would see whichever
+one the load balancer happened to pick. Scaling this safely means moving state
+to Redis, which the contract deliberately rules out for the MVP.
+
+**A paid instance is required.** Free instances sleep when idle, and a server
+that sleeps mid-session ends the run.
+
+### Why not Vercel
+
+Vercel's WebSocket support (public beta, June 2026) pins a connection to a
+single function instance for at most 30 minutes, with no built-in way to
+broadcast between instances, and recommends Redis for any shared state. R2 and
+R3 are 30 minutes each, and the whole design is one authoritative process
+broadcasting full state to eight clients — so the platform's two hard limits
+are exactly the two things this app does.
 
 ---
 
@@ -54,9 +119,14 @@ lib/
   visibility.js        per-role filtering — THE SECURITY BOUNDARY
   log.js               runlog.jsonl appender + snapshot writer
   rounds.json          round config from spec §8; runbook beats live here
+  db.js                SQLite: facilitators, sessions, teams
+  auth.js              scrypt passwords, server-side cookie sessions
+  sessions.js          registry of concurrent games, one per session
 public/sector          dashboard   (spec §6.1)
 public/bigscreen       projection  (spec §6.2)
 public/control         facilitator (spec §6.3)
+public/admin           session management (hosted mode)
+scripts/create-user.js facilitator accounts
 tools/                 workbook generator, the matrix itself, and the exporter
 test/                  unit, visibility, integration and resilience suites
 ```
@@ -135,8 +205,10 @@ Do not let a future change add these:
   and off the transcript.
 - **No cascade engine.** The facilitator fires everything. `triggered_by`
   exists on every fault and stays `null`.
-- **No accounts or cross-run persistence.** `reset_run` is the whole
-  lifecycle.
+- **No participant accounts.** Facilitators sign in; teams never do. A table
+  joins by code and stays anonymous, and nothing about a participant persists
+  between runs. The hosted mode adds session management, not participant
+  identity.
 - **No responsive layout.** Fixed 1366×768 on provided hardware.
 
 ---

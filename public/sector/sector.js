@@ -11,7 +11,9 @@
  */
 (function sectorDashboard() {
   const U = window.Undercity;
-  const SECTOR = (location.pathname.split('/')[2] || '').toUpperCase();
+  const CTX = U.context();
+  const SECTOR = CTX.sector;
+  let teamName = null;
   const RESOURCES = [
     { key: 'power', glyph: '⚡', name: 'power' },
     { key: 'water', glyph: '💧', name: 'water' },
@@ -28,10 +30,16 @@
   const verdict = new Map();
 
   const socket = U.connect({
-    hello: { type: 'hello', role: 'sector', sector: SECTOR, token: null },
+    hello: { type: 'hello', role: 'sector', session: CTX.session, sector: SECTOR, token: null },
     onState: render,
     onStatus: setConnStatus,
     onMessage: (msg) => {
+      if (msg.type === 'welcome' && msg.team_name) {
+        // The table's own name, so a room of six tables knows which is theirs.
+        teamName = msg.team_name;
+        const el = $('team-name');
+        if (el) { el.textContent = teamName; el.classList.remove('hidden'); }
+      }
       if (msg.type === 'submit_result') handleResult(msg);
       if (msg.type === 'sting') U.playSting(msg.sound);
     },

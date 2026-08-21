@@ -1,0 +1,34 @@
+# Render blueprint — https://render.com/docs/blueprint-spec
+#
+# A single always-on web service with a persistent disk. UNDERCITY holds
+# authoritative game state in memory and broadcasts it over websockets, so it
+# must NOT be scaled to multiple instances: a second instance would hold its
+# own copy of every game and clients would land on whichever one the load
+# balancer picked. One instance, one source of truth.
+
+services:
+  - type: web
+    name: undercity
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter          # needs a paid plan: free instances sleep, and a
+                           # sleeping server ends a live session
+    region: singapore      # closest to KL; move if your cohorts are elsewhere
+    numInstances: 1        # see the note above — do not raise this
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+
+    disk:
+      name: undercity-data
+      mountPath: /var/data # SQLite + one runlog.jsonl per session
+      sizeGB: 5
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MODE
+        value: hosted
+      - key: DATA_DIR
+        value: /var/data
+      - key: SECURE_COOKIES
+        value: "1"

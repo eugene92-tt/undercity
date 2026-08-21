@@ -13,8 +13,10 @@
 
   let state = null;
 
+  const CTX = U.context();
+
   U.connect({
-    hello: { type: 'hello', role: 'bigscreen', token: null },
+    hello: { type: 'hello', role: 'bigscreen', session: CTX.session, token: null },
     onState: render,
     onMessage: (msg) => { if (msg.type === 'sting') U.playSting(msg.sound); },
   });

@@ -57,6 +57,10 @@ test.before(async () => {
       // log or snapshot another test is asserting on.
       RUNLOG_PATH: path.join(runDir, 'runlog.jsonl'),
       SNAPSHOT_PATH: path.join(runDir, 'snapshot.json'),
+      // Own SQLite file too: two LAN servers sharing ./data would fight over
+      // the same LOCAL session row and snapshot.
+      DATA_DIR: path.join(runDir, 'data'),
+      MODE: 'lan',
     },
     stdio: 'ignore',
   });

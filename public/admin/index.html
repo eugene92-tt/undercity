@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UNDERCITY — Sessions</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%230a0c0e%27/%3E%3Crect x=%273%27 y=%273%27 width=%2710%27 height=%2710%27 fill=%27%23E8B33A%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/shared/base.css">
+<link rel="stylesheet" href="/assets/admin/admin.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="login-view" hidden>
+  <form class="login-card panel" id="login-form">
+    <h1>UNDERCITY</h1>
+    <p class="sub">Facilitator sign-in</p>
+    <label>Email<input type="email" id="login-email" autocomplete="username" required></label>
+    <label>Password<input type="password" id="login-password" autocomplete="current-password" required></label>
+    <div class="error" id="login-error" hidden></div>
+    <button type="submit" class="primary wide">SIGN IN</button>
+  </form>
+</div>
+
+<!-- APP -->
+<div class="shell" id="app-view" hidden>
+  <header class="topbar">
+    <div class="left">
+      <h1>UNDERCITY <span class="sub">SESSIONS</span></h1>
+    </div>
+    <div class="right">
+      <span class="who" id="who"></span>
+      <button id="btn-logout">SIGN OUT</button>
+    </div>
+  </header>
+
+  <main class="body">
+    <!-- LIST -->
+    <section id="list-view">
+      <div class="section-head">
+        <h2>Sessions</h2>
+        <div class="head-actions">
+          <label class="chk"><input type="checkbox" id="show-ended"> show ended</label>
+          <button class="primary" id="btn-new">+ NEW SESSION</button>
+        </div>
+      </div>
+      <div class="sessions" id="sessions"></div>
+    </section>
+
+    <!-- CREATE -->
+    <section id="create-view" hidden>
+      <div class="section-head">
+        <h2>New session</h2>
+        <button id="btn-cancel-create">CANCEL</button>
+      </div>
+      <form class="panel form" id="create-form">
+        <div class="row2">
+          <label>Session name <em>required</em>
+            <input type="text" id="new-name" placeholder="e.g. Acme Leadership — Cohort 1" required>
+          </label>
+          <label>Client <em>optional</em>
+            <input type="text" id="new-client" placeholder="e.g. Acme Bhd">
+          </label>
+        </div>
+        <p class="hint">Name the six tables. Blank tables take the sector's own name, so a session is always runnable.</p>
+        <div class="team-grid" id="new-teams"></div>
+        <div class="error" id="create-error" hidden></div>
+        <button type="submit" class="primary">CREATE SESSION</button>
+      </form>
+    </section>
+
+    <!-- DETAIL -->
+    <section id="detail-view" hidden>
+      <div class="section-head">
+        <button id="btn-back">&larr; ALL SESSIONS</button>
+        <div class="head-actions" id="detail-actions"></div>
+      </div>
+      <div id="detail"></div>
+    </section>
+  </main>
+</div>
+
+<script src="/assets/admin/admin.js"></script>
+</body>
+</html>

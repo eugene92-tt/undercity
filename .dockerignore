@@ -1,0 +1,10 @@
+node_modules
+data
+runlog*.jsonl
+snapshot.json
+test
+docs
+tools
+.git
+.github
+*.md

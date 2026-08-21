@@ -167,3 +167,9 @@
   font-style: normal; font-size: 9px; letter-spacing: 0.16em;
   background: var(--amber); color: #17130a; padding: 1px 5px; margin-left: 4px;
 }
+
+/* the table's own team name, when a hosted session assigned one */
+.ident .team {
+  font-size: 11px; letter-spacing: 0.1em; color: var(--ink-dim);
+  border-left: 1px solid var(--line); padding-left: 10px; margin-left: 2px;
+}
