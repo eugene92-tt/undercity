@@ -81,6 +81,15 @@ if (process.env.RESUME !== '0') {
 const app = express();
 app.use('/shared', express.static(path.join(__dirname, 'public', 'shared')));
 
+// Static assets first: /sector/sector.css must not be read as sector "SECTOR.CSS".
+// Unmatched paths fall through to the view routes below.
+// redirect:false stops express.static bouncing /bigscreen to /bigscreen/ before
+// the view route below can answer it.
+const staticOpts = { redirect: false };
+app.use('/sector', express.static(path.join(__dirname, 'public', 'sector'), staticOpts));
+app.use('/bigscreen', express.static(path.join(__dirname, 'public', 'bigscreen'), staticOpts));
+app.use('/control', express.static(path.join(__dirname, 'public', 'control'), staticOpts));
+
 app.get('/', (_req, res) => {
   res.redirect('/bigscreen');
 });
@@ -95,9 +104,6 @@ app.get('/bigscreen', (_req, res) => {
 app.get('/control', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'control', 'index.html'));
 });
-app.use('/sector', express.static(path.join(__dirname, 'public', 'sector')));
-app.use('/bigscreen', express.static(path.join(__dirname, 'public', 'bigscreen')));
-app.use('/control', express.static(path.join(__dirname, 'public', 'control')));
 
 // Content the facilitator panel needs to populate its inject library. This is
 // the answer key, so it is token-gated exactly like the control socket.

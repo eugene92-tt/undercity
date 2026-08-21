@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UNDERCITY — Sector</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%230a0c0e%27/%3E%3Crect x=%272%27 y=%272%27 width=%2712%27 height=%2712%27 fill=%27%23E8B33A%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/shared/base.css">
+<link rel="stylesheet" href="/sector/sector.css">
+</head>
+<body>
+<div id="app" class="shell">
+
+  <header class="topbar">
+    <div class="ident">
+      <span class="crest" id="crest"></span>
+      <h1 id="sector-name">—</h1>
+      <span class="code" id="sector-code">—</span>
+    </div>
+    <div class="tempo">
+      <span class="label">Round</span><b id="round">—</b>
+      <span class="label">Clock</span><b id="round-clock">--:--</b>
+      <span class="label">Mode</span><b id="mode">—</b>
+    </div>
+    <div class="conn" id="conn" data-status="down">
+      <span class="dot"></span><span class="text" id="conn-text">CONNECTING</span>
+    </div>
+  </header>
+
+  <main class="columns">
+
+    <!-- LEFT — MY SECTOR (always full fidelity) -->
+    <section class="col col-mine panel">
+      <h2 class="col-title">MY SECTOR</h2>
+
+      <div class="integrity-block">
+        <div class="integrity-head">
+          <span class="label">Integrity</span>
+          <span class="integrity-value" id="integrity">—</span>
+        </div>
+        <div class="bar" id="integrity-bar"><i style="width:0%"></i></div>
+        <div class="status-line" id="status">—</div>
+      </div>
+
+      <div class="block">
+        <span class="label">Workforce</span>
+        <div class="workforce">
+          <div class="wf"><span class="wf-icon">&#128100;</span><b id="wf-active">—</b><span class="label">active</span></div>
+          <div class="wf injured"><span class="wf-icon">&#9855;</span><b id="wf-injured">—</b><span class="label">injured</span></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <span class="label">Inventory <em>— declare what is on the table</em></span>
+        <div class="inventory" id="inventory"></div>
+        <div class="inv-note">Physical chits are the source of truth.</div>
+      </div>
+
+      <div class="block upkeep">
+        <span class="label">Next upkeep</span>
+        <div class="upkeep-line">
+          <span id="upkeep-cost">—</span>
+          <b id="upkeep-clock">--:--</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- CENTRE — ACTIVE FAULTS -->
+    <section class="col col-faults panel">
+      <h2 class="col-title">ACTIVE FAULTS <span id="fault-count" class="count">0</span></h2>
+      <div class="faults" id="faults">
+        <div class="empty">No active faults.</div>
+      </div>
+    </section>
+
+    <!-- RIGHT — CITY FEED (deliberately degraded) -->
+    <section class="col col-city panel">
+      <div id="city-normal">
+        <h2 class="col-title">CITY FEED <span class="delay-note" id="delay-note">60s delay</span></h2>
+        <div class="city" id="city"></div>
+        <h2 class="col-title announce-title">ANNOUNCEMENTS</h2>
+        <div class="announcements" id="announcements">
+          <div class="empty">Nothing yet.</div>
+        </div>
+      </div>
+
+      <!-- COUNCIL takeover -->
+      <div id="city-council" class="council hidden">
+        <div class="council-label">COUNCIL</div>
+        <div class="council-clock" id="council-clock">5:00</div>
+        <div class="council-call">SEND LIAISON + CHIEF<br>TO COUNCIL TABLE</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- DARK takeover -->
+  <div id="dark-overlay" class="dark-overlay hidden">
+    <div class="stencil">SECTOR DARK</div>
+    <div class="dark-sub">Systems offline. Comms only.</div>
+  </div>
+
+</div>
+<script src="/shared/ws.js"></script>
+<script src="/sector/sector.js"></script>
+</body>
+</html>
