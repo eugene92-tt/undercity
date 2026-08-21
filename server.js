@@ -29,6 +29,12 @@ const TOKEN = process.env.FACILITATOR_TOKEN || 'haven9';
 const CONTENT_DIR = path.join(__dirname, 'content');
 const HEARTBEAT_MS = 20000;
 
+// Where this run's log and snapshot live. Overridable so a second instance
+// never writes over the first's files — and so the facilitator can point the
+// log at a USB stick for the debrief.
+const RUNLOG_PATH = process.env.RUNLOG_PATH || path.join(__dirname, 'runlog.jsonl');
+const SNAPSHOT_PATH = process.env.SNAPSHOT_PATH || path.join(__dirname, 'snapshot.json');
+
 // -- content ------------------------------------------------------------------
 
 function loadJson(p) {
@@ -61,7 +67,7 @@ console.log(
 
 // -- state --------------------------------------------------------------------
 
-const log = new RunLog(path.join(__dirname, 'runlog.jsonl'), path.join(__dirname, 'snapshot.json'));
+const log = new RunLog(RUNLOG_PATH, SNAPSHOT_PATH);
 
 function defaultRunId() {
   return `${new Date().toISOString().slice(0, 10)}-run`;

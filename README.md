@@ -29,8 +29,13 @@ npm start
 ```bash
 PORT=3000 FACILITATOR_TOKEN=haven9 npm start   # both default as shown
 RESUME=0 npm start                             # ignore any snapshot, start clean
-npm test                                       # 61 tests
+RUNLOG_PATH=/media/usb/run.jsonl npm start     # write the log straight to a stick
+npm test                                       # 61 tests, ~12s
 ```
+
+`RUNLOG_PATH` and `SNAPSHOT_PATH` both default to the repo root. Set them if
+you ever run two instances at once — otherwise the second overwrites the
+first's log and snapshot.
 
 Runs on a dedicated offline travel router. No internet is required during
 play, and none is used.

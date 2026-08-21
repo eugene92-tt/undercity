@@ -10,12 +10,19 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 const WebSocket = require('ws');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = 3223;
 const TOKEN = 'test-token';
+
+// Own scratch files, so a stray server from another suite cannot overwrite
+// the snapshot these tests are about to restore from.
+const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'undercity-resilience-'));
+const RUNLOG_PATH = path.join(runDir, 'runlog.jsonl');
+const SNAPSHOT_PATH = path.join(runDir, 'snapshot.json');
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -38,7 +45,14 @@ function client(hello) {
 function boot(resume) {
   return spawn(process.execPath, ['server.js'], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(PORT), FACILITATOR_TOKEN: TOKEN, RESUME: resume },
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      FACILITATOR_TOKEN: TOKEN,
+      RESUME: resume,
+      RUNLOG_PATH,
+      SNAPSHOT_PATH,
+    },
     stdio: 'ignore',
   });
 }
@@ -55,7 +69,7 @@ async function waitUp() {
 }
 
 test('a mid-run crash is recovered from the snapshot', async () => {
-  try { fs.unlinkSync(path.join(ROOT, 'snapshot.json')); } catch { /* fine */ }
+  try { fs.unlinkSync(SNAPSHOT_PATH); } catch { /* fine */ }
 
   let server = boot('0');
   await waitUp();

@@ -48,7 +48,16 @@ test.before(async () => {
   runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'undercity-e2e-'));
   server = spawn(process.execPath, ['server.js'], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(PORT), FACILITATOR_TOKEN: TOKEN, RESUME: '0' },
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      FACILITATOR_TOKEN: TOKEN,
+      RESUME: '0',
+      // Own scratch files: a second server instance must never clobber the
+      // log or snapshot another test is asserting on.
+      RUNLOG_PATH: path.join(runDir, 'runlog.jsonl'),
+      SNAPSHOT_PATH: path.join(runDir, 'snapshot.json'),
+    },
     stdio: 'ignore',
   });
   // Give the process time to validate content and bind.
@@ -255,7 +264,7 @@ test('a full R1→R4 dry run, six sectors on one server', async (t) => {
   });
 
   await t.test('runlog.jsonl is complete and timestamp-aligned', () => {
-    const lines = fs.readFileSync(path.join(ROOT, 'runlog.jsonl'), 'utf8')
+    const lines = fs.readFileSync(path.join(runDir, 'runlog.jsonl'), 'utf8')
       .trim().split('\n').map((l) => JSON.parse(l));
 
     const kinds = new Set(lines.map((e) => e.ev));
