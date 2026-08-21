@@ -15,7 +15,9 @@ overwritten, and paper/server will desynchronise.
 Usage:
     python export_faults.py [path/to/undercity-crossref-matrix.xlsx] [outdir]
 
-Exit code 1 if validation fails. Do not ship a build on a failed export.
+Exit code 1 if validation fails, if any Validation row is unevaluated, or if any
+resolution-code cell is empty (= missing formula cache). Aborts before writing:
+a partial or ghost-code export is worse than no export. Do not ship on a failure.
 """
 import json
 import sys
@@ -102,12 +104,24 @@ problems = []
 val = wb["Validation"]
 val_rows = []
 for row in val.iter_rows(min_row=2, values_only=True):
-    if row[0] is None or row[3] is None:
-        continue  # blank rows and the footer note carry no status cell
+    if row[0] is None:
+        continue
     check, expected, actual, status = row[0], row[1], row[2], row[3]
+    if status is None:
+        # The footer note legitimately has no status. Anything else with a null
+        # status is a missing formula cache, not a row to skip.
+        if str(check).startswith("All rows must read OK"):
+            continue
+        problems.append(f"Validation row has no status: {check} — formula cache missing?")
+        continue
     val_rows.append((check, expected, actual, status))
     if status != "OK":
         problems.append(f"Validation failed: {check} (expected {expected}, got {actual})")
+
+if not val_rows:
+    problems.append(
+        "Validation sheet produced ZERO evaluated checks — the workbook has no cached "
+        f"formula values. Run: python recalc.py {XLSX.name} 60")
 
 # Spec tables
 specs = {}
@@ -135,19 +149,16 @@ for row in wb["Faults"].iter_rows(min_row=2, values_only=True):
      s1, v1, s2, v2, rescode, deadline, flags) = row[:17]
 
     rescode = clean(rescode)
-
-    # A false alarm is declared EXPLICITLY in the workbook ("NO CODE ..."). An
-    # empty cell is not a false alarm — it means the formula cache is missing,
-    # which happens whenever the workbook is written by a script rather than by
-    # Excel/LibreOffice. Treating None as a false alarm silently turns every
-    # fault in the deck into an unsolvable ghost, so it is a hard error.
-    is_false_alarm = rescode is not None and "NO CODE" in rescode
-
+    # A GENUINE false alarm carries the literal text "NO CODE" (written by the
+    # generator). An EMPTY cell is not a false alarm — it means the formula cache
+    # is missing (any scripted edit drops it) and every code in the file is a
+    # ghost. Never conflate the two: that conflation shipped 36 unsolvable faults.
     if rescode is None:
         problems.append(
-            f"{code}: resolution code cell is empty — the workbook's formula cache is "
-            f"missing. Open it in Excel/LibreOffice, recalculate, and save before exporting."
-        )
+            f"{code}: resolution code cell is EMPTY. The workbook formula cache is "
+            f"missing — run: python recalc.py {XLSX.name} 60")
+        continue
+    is_false_alarm = "NO CODE" in rescode
 
     valid_codes = [] if is_false_alarm else [rescode] + ALT_CODES.get(code, [])
 
@@ -200,11 +211,6 @@ for f in faults:
         continue
     if not f["valid_codes"]:
         problems.append(f"{f['code']}: no valid resolution code")
-    if f["procedure"] and not f["valid_codes"]:
-        problems.append(
-            f"{f['code']}: has procedure {f['procedure']} but no resolution code — "
-            f"a solvable fault cannot be codeless"
-        )
     for c in f["valid_codes"]:
         if not c or "None" in c:
             problems.append(f"{f['code']}: malformed resolution code '{c}' "
@@ -224,14 +230,6 @@ for f in faults:
 
 if 290 in [s["value"] for s in specs.values()]:
     problems.append("Reserved value 290 appears in a spec table — collides with the discrepancy seed")
-
-# The Validation sheet is entirely formula-driven, so an empty read means the
-# same lost cache — and it would otherwise pass as "0 checks OK".
-if not val_rows:
-    problems.append(
-        "Validation sheet produced no readable checks — the workbook's formula cache is "
-        "missing. Open it in Excel/LibreOffice, recalculate, and save before exporting."
-    )
 
 if problems:
     print("EXPORT ABORTED — fix these first:\n")

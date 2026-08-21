@@ -30,7 +30,7 @@ npm start
 PORT=3000 FACILITATOR_TOKEN=haven9 npm start   # both default as shown
 RESUME=0 npm start                             # ignore any snapshot, start clean
 RUNLOG_PATH=/media/usb/run.jsonl npm start     # write the log straight to a stick
-npm test                                       # 61 tests, ~12s
+npm test                                       # 63 tests, ~12s
 ```
 
 `RUNLOG_PATH` and `SNAPSHOT_PATH` both default to the repo root. Set them if
@@ -57,7 +57,7 @@ lib/
 public/sector          dashboard   (spec §6.1)
 public/bigscreen       projection  (spec §6.2)
 public/control         facilitator (spec §6.3)
-tools/                 the crossref matrix and its exporter
+tools/                 workbook generator, the matrix itself, and the exporter
 test/                  unit, visibility, integration and resilience suites
 ```
 
@@ -68,11 +68,16 @@ test/                  unit, visibility, integration and resilience suites
 The spreadsheet is the game. The code is a display layer.
 
 ```
-edit tools/undercity-crossref-matrix.xlsx
-  → recalculate (formulas must be cached; the exporter aborts otherwise)
-  → npm run export-content
+tools/build_crossref.py            generates the workbook (deterministic, seed 9)
+  → recalculate in Excel/LibreOffice   formulas must be cached
+  → npm run export-content             tools/export_faults.py → content/*.json
   → regenerate binder PDFs
 ```
+
+Ordinary content edits start at the workbook, not the generator: edit
+`tools/undercity-crossref-matrix.xlsx`, recalculate, re-export. The generator is
+there so the workbook itself is reproducible — `random.seed(9)` fixes every spec
+value, so re-running it does not invalidate printed binders.
 
 **Never hand-edit `content/*.json`.** A hand-fix desynchronises paper from
 server and makes a fault unsolvable mid-session — the one failure a
@@ -83,8 +88,9 @@ resolution code from `specs.json`, enforces spec-value uniqueness, rejects
 ambiguous codes, and flags flavour text that contradicts the answer key.
 **Errors abort startup.** Warnings print loudly and allow the run.
 
-There is one open content defect — see **`CONTENT-ISSUES.md`** (F-208's fault
-card sends teams to the wrong spec row).
+`content/` currently validates clean — 0 errors, 0 warnings. Findings to date,
+including the F-208 card/answer-key mismatch and the exporter bug that silently
+accepted an uncalculated workbook, are recorded in **`CONTENT-ISSUES.md`**.
 
 ---
 

@@ -14,80 +14,88 @@ warnings print loudly and allow the run.
 
 ---
 
-## 🔴 OPEN — F-208 flavour line contradicts the answer key
+## ✅ FIXED — F-208 flavour line contradicted the answer key
 
-**Severity: session-breaking.** A team doing everything correctly cannot solve
-this fault.
+**Was: session-breaking.** A team doing everything correctly could not solve
+this fault. Corrected at source and re-exported.
 
-| | |
-|---|---|
-| Fault | `F-208` "Rail power flicker" (TRN, R2) |
-| Flavour (prints on the fault card) | "Yard rail flickers on lamp-bank switching; match **AGR West** cycle code." |
-| `spec_refs` | `A4-3` — "Array **East**" = **915** |
-| `valid_codes` | `["P-05-915"]` |
-| What the card sends the team to fetch | `A4-4` "Array West" = **534** → submits `P-05-534` → **rejected** |
+| | Before | After |
+|---|---|---|
+| Flavour (prints on the fault card) | "match AGR **West** cycle code" | "match AGR **East** cycle code" |
+| `spec_refs` | `A4-3` "Array East" = 915 | unchanged |
+| `valid_codes` | `["P-05-915"]` | unchanged |
 
-Because spec values are unique per table cell and deliberately meaningless out
-of context (spec §3.3), the team has no way to recover from the wrong row
-except by guessing — and three guesses trigger the 20-second lockout.
+A team reading the old card fetched `A4-4` "Array West" = 534, submitted
+`P-05-534`, and was rejected — with no recovery path, since spec values are
+deliberately meaningless out of context (spec §3.3) and three guesses trigger
+the 20-second lockout.
 
-### Which half is wrong
+### Which half was wrong
 
-The `spec_refs` assignment is correct; **the flavour text is wrong**. The
-matrix's own `Used By` column in the `SpecTables` sheet records the intended
-allocation:
+The `spec_refs` assignment was right; the flavour text was wrong. The matrix's
+own `Used By` column records the intended allocation:
 
 | Spec | Row label | Value | Used By |
 |---|---|---|---|
 | `A4-3` | Array East | 915 | **F-208** |
 | `A4-4` | Array West | 534 | **F-401** |
 
-`F-401`'s flavour independently confirms this — it says "AGR **West** array
-code" and refs `A4-4`. Repointing F-208 at `A4-4` would make two faults share
-one spec value, orphan `A4-3`, and weaken the uniqueness property that makes
+`F-401` independently confirms it — its flavour says "AGR **West** array code"
+and it refs `A4-4`. Repointing F-208 at `A4-4` would have made two faults share
+one spec value, orphaned `A4-3`, and weakened the uniqueness property that makes
 overheard numbers useless.
 
-### Recommended fix
+### How it was fixed
 
-In `tools/undercity-crossref-matrix.xlsx`, sheet `Faults`, row for `F-208`,
-column E (`Flavour Line (card front)`):
+In `tools/undercity-crossref-matrix.xlsx`, sheet `Faults`, column E of the
+`F-208` row: "AGR West" → "AGR East". The workbook was recalculated and
+`tools/export_faults.py` re-run. `tools/build_crossref.py` (the generator)
+carries the same corrected string, so a regenerated workbook stays fixed.
 
-```
-- Yard rail flickers on lamp-bank switching; match AGR West cycle code.
-+ Yard rail flickers on lamp-bank switching; match AGR East cycle code.
-```
+### Verified after the fix
 
-Then recalculate and re-export:
+- The re-exported `faults.json` differs from the previous one **in that single
+  flavour string** — nothing else across 36 faults changed.
+- **No spec-value drift.** All 66 values are identical to before: `W4-3` still
+  prints 340, 290 still appears in no table, all values still unique.
+  **Only F-208's own fault card needs reprinting — no binder changes.**
+- A fresh export from the vendored workbook reproduces all three committed
+  fixtures **byte-for-byte**, proving the committed content is generated rather
+  than hand-edited.
+- `build_crossref.py` is deterministic (`random.seed(9)`): re-running it
+  reproduces all 66 spec values and every flavour line exactly, so regenerating
+  the workbook never invalidates printed binders.
+- `lib/validate.js` now reports **0 errors and 0 warnings**; the server boots
+  without a warning banner.
+- Both structural edge cases survive: `F-201` two codes, `F-210` zero.
 
-```
-npm run export-content
-```
+`test/validate.test.js` no longer asserts the defect. It now asserts the shipped
+content is clean, that F-208's card and key name the same row, and — on a
+mutated in-memory fixture — that the prose detector still fires. Fixing the
+content must not silently retire the check that caught it.
 
-No code change is required — `valid_codes` and `spec_refs` are already correct,
-and the resolution code formula (`=J23&"-"&TEXT(L23,"000")`) is untouched.
+---
 
-### Status
+## ⚠️ OPEN — `export_faults.py` references a `recalc.py` that does not exist
 
-**Not applied — and it cannot be applied from a headless environment.**
+Low severity: affects an error path only, not a normal run.
 
-The three JSON fixtures in `content/` are byte-identical to the exporter output
-supplied with the build (verified by re-running the exporter against the
-matrix: all three files match exactly).
+When the exporter hits its formula-cache guard it instructs the operator to
+`run: python recalc.py <workbook> 60`. That file is not in this repo and was not
+supplied with the rectified pipeline, so the instruction is currently a dead end.
+The reference appears in three places: the module docstring, the
+zero-validation-rows error, and the empty-resolution-code error.
 
-The fix must be made on a machine with Excel or LibreOffice. Editing the
-workbook with `openpyxl` writes the string correctly but discards the cached
-values of every formula cell, which is precisely the corruption the exporter
-now refuses to process — see the exporter fix below. LibreOffice headless is
-unavailable in this environment, so there is no way to restore the cache after
-a scripted edit.
+The exporter is otherwise adopted verbatim as canonical, so the wording is left
+untouched rather than guessed at. Two ways to close this:
 
-**To apply it:** open `tools/undercity-crossref-matrix.xlsx`, sheet `Faults`,
-find the `F-208` row, change column E from "AGR West" to "AGR East", save
-(which recalculates), then run `npm run export-content`. The only change in
-the regenerated fixtures will be that one flavour string — `spec_refs` and
-`valid_codes` are already correct and the resolution-code formula is
-untouched. `npm test` then expects zero warnings instead of one; update
-`test/validate.test.js` accordingly.
+- drop `recalc.py` into `tools/` (the messages then become accurate with no code
+  change), or
+- reword the two messages to name the manual route as well — recalculating by
+  opening the workbook in Excel/LibreOffice and saving.
+
+Until then, the manual route is the one that works: **open the workbook, save
+it, re-export.**
 
 ---
 

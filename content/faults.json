@@ -679,7 +679,7 @@
       "round": "R2",
       "sector": "TRN",
       "name": "Rail power flicker",
-      "flavour": "Yard rail flickers on lamp-bank switching; match AGR West cycle code.",
+      "flavour": "Yard rail flickers on lamp-bank switching; match AGR East cycle code.",
       "severity": 2,
       "decay_per_min": 1.0,
       "crew_required": 2,

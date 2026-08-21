@@ -13,17 +13,49 @@ const { validateContent } = require('../lib/validate');
 /** A deep clone so a mutation in one test cannot leak into another. */
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
-test('the shipped content passes with no errors', () => {
-  const { errors } = validateContent(loadContent());
+test('the shipped content is clean — no errors, no warnings', () => {
+  const { errors, warnings } = validateContent(loadContent());
   assert.deepEqual(errors, [], 'shipped fixtures must never fail validation');
+  assert.deepEqual(warnings, [], 'no fault card may contradict the answer key');
 });
 
-test('the shipped content raises exactly one prose warning: F-208', () => {
-  const { warnings } = validateContent(loadContent());
+test('F-208 reconciles: the card and the answer key name the same row', () => {
+  const { faults, specs } = loadContent();
+  const f208 = faults.faults.find((f) => f.code === 'F-208');
+  const ref = specs.specs.find((s) => s.spec_id === f208.spec_refs[0].spec_id);
+
+  // The defect this fixture used to carry: flavour said West, key said East.
+  assert.match(f208.flavour, /AGR East/);
+  assert.equal(ref.row_label, 'Array East');
+  assert.equal(ref.value, 915);
+  assert.deepEqual(f208.valid_codes, ['P-05-915']);
+});
+
+test('the prose detector still fires when a card contradicts the key', () => {
+  // No shipped fault trips this check any more, so prove it still works —
+  // otherwise fixing the content silently retires the guardrail that caught it.
+  const content = clone(loadContent());
+  const f208 = content.faults.faults.find((f) => f.code === 'F-208');
+  f208.flavour = f208.flavour.replace('AGR East', 'AGR West');
+
+  const { warnings } = validateContent(content);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /^F-208:/);
   assert.match(warnings[0], /flavour says "West"/);
   assert.match(warnings[0], /A4-3 "Array East" \(915\)/);
+  assert.match(warnings[0], /A4-4 "Array West" \(534\)/);
+});
+
+test('the detector catches the same defect on any fault, not just F-208', () => {
+  // F-209 legitimately mentions COM's Grid South. Point its flavour at Grid
+  // North instead and the contradiction must surface.
+  const content = clone(loadContent());
+  const f209 = content.faults.faults.find((f) => f.code === 'F-209');
+  f209.flavour = 'Array dead; re-strike needs COM Grid North calibration offset.';
+
+  const { warnings } = validateContent(content);
+  assert.ok(warnings.some((w) => w.startsWith('F-209:')),
+    'the check is structural, not hardcoded to one fault code');
 });
 
 test('F-209 is not flagged — its direction word describes its own equipment', () => {
