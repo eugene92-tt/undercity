@@ -141,6 +141,48 @@ test('the 290 telemetry reaches sectors and big screen and is never reconciled',
   assert.ok(!flatten(forBigscreen(game)).includes('340'));
 });
 
+test('the dashboard withholds the dependency half, exactly as the card does', () => {
+  const game = loaded();
+  game.fireFault('F-302', 'WTR');   // "...buried in your own Appendix C."
+  const payload = forSector(game, 'WTR');
+  const fault = payload.sectors.WTR.faults.find((f) => f.code === 'F-302');
+
+  assert.equal(fault.flavour, 'Lower reservoir wall cracking.');
+  assert.ok(!fault.flavour.includes(';'), 'the dependency clause is cut');
+});
+
+test('no sector payload ever names a buried Appendix C spec', () => {
+  // The six R3/R4 faults that need a buried spec must not advertise it. The
+  // binder gives Appendix C no index entry on purpose (spec §4.1 p.10); a
+  // dashboard that names it hands over the frustration-tolerance probe.
+  const buried = ['F-302', 'F-305', 'F-401', 'F-402', 'F-403', 'F-404'];
+  for (const code of buried) {
+    const game = newGame();
+    const def = game.faultsByCode.get(code);
+    game.fireFault(code, def.sector);
+
+    const json = JSON.stringify(forSector(game, def.sector));
+    assert.ok(!/Appendix C/i.test(json), `${code}: sector payload names Appendix C`);
+    assert.ok(!/\bburied\b/i.test(json), `${code}: sector payload says "buried"`);
+  }
+});
+
+test('a flavour with no dependency clause is left alone', () => {
+  const game = newGame();
+  game.fireFault('F-210', 'AGR');   // two plain sentences, no semicolon
+  const fault = forSector(game, 'AGR').sectors.AGR.faults[0];
+  assert.equal(fault.flavour, 'Dashboards show a Bay 3 flood. Fields report dry floors.');
+});
+
+test('the facilitator still reads the whole flavour line', () => {
+  const game = newGame();
+  game.fireFault('F-302', 'WTR');
+  const fault = forControl(game).sectors.WTR.faults.find((f) => f.code === 'F-302');
+
+  assert.match(fault.flavour, /Appendix C/,
+    'control holds the answer key already — it needs the full line');
+});
+
 test('no payload of any role contains a chat or message field', () => {
   const game = loaded();
   for (const payload of [forSector(game, 'POW'), forBigscreen(game), forControl(game)]) {

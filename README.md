@@ -128,6 +128,8 @@ public/control         facilitator (spec §6.3)
 public/admin           session management (hosted mode)
 scripts/create-user.js facilitator accounts
 tools/                 workbook generator, the matrix itself, and the exporter
+tools/kit/             paper-kit generators (binders, cards, charter, guides)
+kit/                   the generated documents, ready to print
 test/                  unit, visibility, integration and resilience suites
 ```
 
@@ -138,11 +140,15 @@ test/                  unit, visibility, integration and resilience suites
 The spreadsheet is the game. The code is a display layer.
 
 ```
-tools/build_crossref.py            generates the workbook (deterministic, seed 9)
-  → recalculate in Excel/LibreOffice   formulas must be cached
-  → npm run export-content             tools/export_faults.py → content/*.json
-  → regenerate binder PDFs
+tools/build_crossref.py              generates the workbook (deterministic, seed 9)
+  └─ recalculate in Excel/LibreOffice   formulas must be cached
+       ├─ npm run export-content        → content/*.json   (server)
+       └─ npm run kit                   → kit/*.docx       (paper)
 ```
+
+Both branches read the **same cells**, so paper and server cannot disagree.
+That is the property the whole design rests on: a hand-fix to either side
+desynchronises them and makes a fault unsolvable mid-session.
 
 Ordinary content edits start at the workbook, not the generator: edit
 `tools/undercity-crossref-matrix.xlsx`, recalculate, re-export. The generator is
@@ -163,6 +169,27 @@ including the F-208 card/answer-key mismatch and the exporter bug that silently
 accepted an uncalculated workbook, are recorded in **`CONTENT-ISSUES.md`**.
 
 ---
+
+## The paper kit
+
+`npm run kit` regenerates all thirteen documents: six sector binders, the fault
+card deck, the facilitator answer key, the City Charter and Continuity Order,
+transfer chits, role cards, the consent pack and table tents, and the
+Facilitator & Administrator Guidebook. Requires `openpyxl` (Python) and the
+`docx` devDependency.
+
+Three content rules are enforced by the generators, not by discipline:
+
+- **A card prints the symptom only.** Flavour lines read `"SYMPTOM; needs X
+  from Y"`; the half after the semicolon is the lookup the team must earn by
+  talking to another sector. `lib/visibility.js` applies the same cut before
+  sending state to a dashboard, so the screen cannot hand over what the paper
+  withholds.
+- **A binder never prints another sector's spec values**, and never a complete
+  resolution code — only the procedure, the cost, and *where* to fetch each
+  value. `assemble_binders.py` fails the build if a binder would leak.
+- **Appendix C gets no index entry.** It is findable only by reading the
+  binder, and nothing on screen names it.
 
 ## Two structural edge cases
 

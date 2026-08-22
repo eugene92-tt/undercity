@@ -1,5 +1,5 @@
 {
-  "note": "Derived from undercity-spec.md §8 (Round Configuration). Round lengths, inject counts and mechanics are transcribed from that table. Per-beat runbook rows are intentionally EMPTY — inject timings and artifact instructions ('hand F-201 card to POW') exist in no build input, and are authored from the facilitation design. The control panel renders whatever beats this file contains; the off-script inject library works regardless.",
+  "note": "Derived from undercity-spec.md \u00a78 (Round Configuration). Round lengths, inject counts and mechanics are transcribed from that table. Per-beat runbook rows are intentionally EMPTY \u2014 inject timings and artifact instructions ('hand F-201 card to POW') exist in no build input, and are authored from the facilitation design. The control panel renders whatever beats this file contains; the off-script inject library works regardless.",
   "defaults": {
     "upkeep_interval_s": 600,
     "resolve_recovery": 5,
@@ -10,7 +10,8 @@
     "council_clock_s": 300,
     "delay_window_s": 60,
     "tick_ms": 10000,
-    "snapshot_ms": 10000
+    "snapshot_ms": 10000,
+    "card_shows_dependency": false
   },
   "rounds": [
     {
@@ -29,7 +30,7 @@
       "length_s": 1200,
       "injects": "1-2 minor per sector, staggered",
       "mechanics": "Intra-sector only",
-      "purpose": "Baseline capture — must feel comfortably manageable",
+      "purpose": "Baseline capture \u2014 must feel comfortably manageable",
       "breather_after_s": 300,
       "beats": []
     },
@@ -59,7 +60,7 @@
       "length_s": 1500,
       "injects": "4 novel-combination faults + 1 mini-triage",
       "mechanics": "Same systems, fresh crisis",
-      "purpose": "Post-measurement — the delta is the product",
+      "purpose": "Post-measurement \u2014 the delta is the product",
       "breather_after_s": 0,
       "beats": []
     }

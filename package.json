@@ -10,7 +10,11 @@
     "test": "node --test test/*.test.js",
     "export-content": "python3 tools/export_faults.py tools/undercity-crossref-matrix.xlsx content",
     "create-user": "node scripts/create-user.js",
-    "start:lan": "MODE=lan node server.js"
+    "start:lan": "MODE=lan node server.js",
+    "kit": "npm run kit:binders && npm run kit:cards && npm run kit:extras",
+    "kit:binders": "python3 tools/kit/assemble_binders.py tools/undercity-crossref-matrix.xlsx kit/binder_content.json && node tools/kit/build_binders.js kit/binder_content.json kit",
+    "kit:cards": "node tools/kit/build_cards.js content/faults.json kit",
+    "kit:extras": "node tools/kit/build_kit.js kit && node tools/kit/build_guidebook.js kit"
   },
   "engines": {
     "node": ">=18"
@@ -19,5 +23,8 @@
     "better-sqlite3": "^13.0.3",
     "express": "^4.19.2",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "docx": "^9.7.1"
   }
 }

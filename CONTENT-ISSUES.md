@@ -21,14 +21,23 @@ this fault. Corrected at source and re-exported.
 
 | | Before | After |
 |---|---|---|
-| Flavour (prints on the fault card) | "match AGR **West** cycle code" | "match AGR **East** cycle code" |
+| Flavour line | "match AGR **West** cycle code" | "match AGR **East** cycle code" |
 | `spec_refs` | `A4-3` "Array East" = 915 | unchanged |
 | `valid_codes` | `["P-05-915"]` | unchanged |
 
-A team reading the old card fetched `A4-4` "Array West" = 534, submitted
-`P-05-534`, and was rejected — with no recovery path, since spec values are
-deliberately meaningless out of context (spec §3.3) and three guesses trigger
-the 20-second lockout.
+**Correction to an earlier version of this note.** It said the flavour "prints
+on the fault card". It does not. `tools/kit/build_cards.js` prints the symptom
+only — everything before the semicolon — so the printed F-208 card always read
+"Yard rail flickers on lamp-bank switching." and never carried the wrong
+direction. The printed binder was correct too: TRN's P-05 procedure reads
+*"Obtain the Array East value from AGR Manual, Table A-4."*
+
+The defect surfaced on the **sector dashboard**, which rendered the full
+flavour line. A team reading their screen was told to fetch AGR *West* (534)
+while the answer key wanted *East* (915) — still unsolvable, still no recovery
+path (spec values are meaningless out of context, §3.3, and three guesses
+trigger the 20-second lockout), but the blast radius was the screen, not the
+paper.
 
 ### Which half was wrong
 
@@ -73,6 +82,39 @@ carries the same corrected string, so a regenerated workbook stays fixed.
 content is clean, that F-208's card and key name the same row, and — on a
 mutated in-memory fixture — that the prose detector still fires. Fixing the
 content must not silently retire the check that caught it.
+
+---
+
+## 🔧 FIXED — the dashboard handed over what the paper withholds
+
+Found by reading `tools/kit/build_cards.js` after the paper kit arrived.
+
+Flavour lines are written `"SYMPTOM; needs X from Y"`. The card renderer prints
+the symptom only, and says why:
+
+> Printing the dependency half would hand the team the lookup for free — and on
+> F-302/F-305 it would name the buried Appendix C outright, killing that
+> mechanic. The binder is the only route from symptom to source.
+
+The sector dashboard printed the **whole line**. Across the deck that meant:
+
+- **29 of 36 faults** told the team on screen which sector to go to, removing
+  the "whose fault is this?" conversation the fault index exists to force
+  (spec §4.1, pages 3–4);
+- **all six** buried-appendix faults — F-302, F-305, F-401, F-402, F-403,
+  F-404 — named Appendix C outright. Appendix C has no index entry *by design*
+  (spec §4.1 p.10, the frustration-tolerance probe). A dashboard that names it
+  hands over the whole mechanic.
+
+**Fixed** in `lib/visibility.js`: the same cut is now applied server-side, in
+`cardFlavour()`, before the text is ever sent — so a participant client cannot
+receive the dependency half even if a future view chose to render it. The
+facilitator's own payload keeps the full line, since they hold the answer key
+anyway. `card_shows_dependency` in `lib/rounds.json` mirrors the renderer's
+`CARD_SHOWS_DEPENDENCY` switch, and both default to off.
+
+`test/visibility.test.js` locks it: no sector payload may contain a dependency
+clause, the word "buried", or the words "Appendix C".
 
 ---
 
