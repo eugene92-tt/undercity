@@ -225,6 +225,111 @@ test('facilitator management is admin-only and cannot lock everyone out', async 
   fs.rmSync(dataDir, { recursive: true, force: true });
 });
 
+test('an unclaimed instance can be claimed with no env var and no shell', async (t) => {
+  // This is the path that matters when render.yaml env vars never reach the
+  // service — e.g. a service created from the dashboard rather than the
+  // Blueprint. Nothing but a browser is required.
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'undercity-setup-'));
+  const server = boot(dataDir);              // deliberately NO ADMIN_EMAIL
+  let out = '';
+  server.stdout.on('data', (d) => { out += d.toString(); });
+  await waitUp();
+
+  await t.test('the boot log says why nothing was seeded', () => {
+    assert.match(out, /ADMIN_EMAIL is not set/,
+      'a silent no-op is impossible to diagnose from outside');
+    assert.match(out, /this instance is unclaimed/);
+    assert.match(out, /Open \/admin and create the first admin/);
+  });
+
+  await t.test('setup is offered while no account exists', async () => {
+    const agent = makeAgent();
+    const res = await agent('/api/auth/needs-setup');
+    assert.equal(res.status, 200);
+    assert.equal(res.json.needs_setup, true);
+  });
+
+  await t.test('setup validates its input', async () => {
+    const agent = makeAgent();
+    assert.equal((await agent('/api/auth/setup', {
+      method: 'POST', body: { email: 'not-an-email', name: 'X', password: 'longenough' },
+    })).status, 400);
+    assert.equal((await agent('/api/auth/setup', {
+      method: 'POST', body: { email: 'a@b.co', name: 'X', password: 'short' },
+    })).status, 400, 'a weak password is refused');
+    assert.equal((await agent('/api/auth/setup', {
+      method: 'POST', body: { email: 'a@b.co', name: '', password: 'longenough' },
+    })).status, 400);
+  });
+
+  let agent;
+  await t.test('the first admin is created and signed straight in', async () => {
+    agent = makeAgent();
+    const res = await agent('/api/auth/setup', {
+      method: 'POST',
+      body: { email: 'eugene@thrivingtalents.com', name: 'Eugene Phuah', password: 'claimed-it-123' },
+    });
+    assert.equal(res.status, 201);
+    assert.equal(res.json.user.is_admin, true);
+
+    // The response set a cookie, so the admin API is immediately reachable.
+    assert.equal((await agent('/api/admin/facilitators')).status, 200);
+  });
+
+  await t.test('setup closes permanently once claimed', async () => {
+    const res = await agent('/api/auth/needs-setup');
+    assert.equal(res.json.needs_setup, false);
+
+    const second = makeAgent();
+    const attempt = await second('/api/auth/setup', {
+      method: 'POST', body: { email: 'attacker@evil.test', name: 'Nope', password: 'password123' },
+    });
+    assert.equal(attempt.status, 409, 'a second admin cannot be minted through setup');
+    assert.match(attempt.json.error, /already has an account/);
+
+    const list = await agent('/api/admin/facilitators');
+    assert.equal(list.json.facilitators.length, 1, 'no extra account was created');
+  });
+
+  await t.test('it stays closed across a restart', async () => {
+    await stop(server);
+    const again = boot(dataDir);
+    await waitUp();
+
+    const anon = makeAgent();
+    assert.equal((await anon('/api/auth/needs-setup')).json.needs_setup, false);
+    assert.equal((await anon('/api/auth/setup', {
+      method: 'POST', body: { email: 'x@y.co', name: 'X', password: 'password123' },
+    })).status, 409);
+
+    // And the claimed account still works.
+    assert.equal((await anon('/api/auth/login', {
+      method: 'POST',
+      body: { email: 'eugene@thrivingtalents.com', password: 'claimed-it-123' },
+    })).status, 200);
+    await stop(again);
+  });
+
+  fs.rmSync(dataDir, { recursive: true, force: true });
+});
+
+test('setup is not offered once an account exists, even a seeded one', async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'undercity-setup2-'));
+  const server = boot(dataDir, {
+    ADMIN_EMAIL: 'seeded@test.local', ADMIN_NAME: 'Seeded', ADMIN_PASSWORD: 'seeded-pass-1',
+  });
+  await waitUp();
+
+  const agent = makeAgent();
+  assert.equal((await agent('/api/auth/needs-setup')).json.needs_setup, false);
+  assert.equal((await agent('/api/auth/setup', {
+    method: 'POST', body: { email: 'other@test.local', name: 'Other', password: 'password123' },
+  })).status, 409);
+
+  await stop(server);
+  fs.rmSync(dataDir, { recursive: true, force: true });
+});
+
 test('a first boot with no ADMIN_PASSWORD still yields a usable account', async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'undercity-acct3-'));
   const server = boot(dataDir, { ADMIN_EMAIL: 'solo@test.local', ADMIN_NAME: 'Solo' });

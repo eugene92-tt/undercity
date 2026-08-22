@@ -172,3 +172,12 @@ body { overflow: auto; }
 .notice .pw { font-size: 15px; letter-spacing: 0.08em; color: var(--ink); background: #0c1013;
               border: 1px solid var(--line); padding: 6px 10px; display: inline-block; margin: 4px 0; }
 .notice .sub { font-size: 11px; color: var(--ink-faint); }
+
+/* first-run setup */
+.setup-note {
+  font-size: 11px; line-height: 1.6; color: var(--ink-dim);
+  border-left: 2px solid var(--amber); padding-left: 9px; margin: 0 0 18px;
+}
+.login-card label em {
+  font-style: normal; text-transform: none; letter-spacing: 0; opacity: 0.7;
+}

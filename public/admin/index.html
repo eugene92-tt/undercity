@@ -10,6 +10,22 @@
 </head>
 <body>
 
+<!-- FIRST-RUN SETUP -->
+<div class="login" id="setup-view" hidden>
+  <form class="login-card panel" id="setup-form">
+    <h1>UNDERCITY</h1>
+    <p class="sub">Claim this instance</p>
+    <p class="setup-note">No accounts exist yet. Create the first admin — this form
+      closes permanently once an account exists.</p>
+    <label>Email<input type="email" id="s-email" autocomplete="username" required></label>
+    <label>Name<input type="text" id="s-name" required></label>
+    <label>Password <em>at least 8 characters</em>
+      <input type="password" id="s-password" autocomplete="new-password" required></label>
+    <div class="error" id="setup-error" hidden></div>
+    <button type="submit" class="primary wide">CREATE ADMIN &amp; SIGN IN</button>
+  </form>
+</div>
+
 <!-- LOGIN -->
 <div class="login" id="login-view" hidden>
   <form class="login-card panel" id="login-form">

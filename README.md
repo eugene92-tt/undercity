@@ -85,10 +85,19 @@ service with a persistent disk.
 
 1. Push the repo and point Render at the blueprint.
 2. Render provisions a 5 GB disk at `/var/data` — SQLite and the run logs.
-3. Set `ADMIN_PASSWORD` in the Render dashboard (it is `sync: false`, so it is
-   never committed). Leave it unset and the first boot generates one and prints
-   it to the deploy log, once.
-4. Sign in at `https://<your-service>/admin` as `ADMIN_EMAIL`.
+3. **Open `/admin` and claim the instance.** While no account exists, that page
+   offers a "create the first admin" form instead of a login. It closes
+   permanently the moment any account exists.
+
+That is the whole first-run path — no shell, no environment variable, no
+redeploy. The other two routes are fallbacks:
+
+- **Seed from the environment.** Set `ADMIN_EMAIL`, `ADMIN_NAME` and
+  `ADMIN_PASSWORD`, and the account is created on boot if it does not exist.
+  ⚠️ `render.yaml` env vars only reach a service **created from the Blueprint**.
+  A service created by hand in the dashboard never sees them — set them there
+  instead. If `ADMIN_EMAIL` is unset the boot log now says so explicitly.
+- **Shell.** `npm run create-user -- you@example.com "Your Name"`.
 
 ### Accounts survive deploys
 

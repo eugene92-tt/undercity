@@ -43,12 +43,24 @@
 
   function showLogin() {
     stopPolling();
+    $('setup-view').hidden = true;
     $('login-view').hidden = false;
     $('app-view').hidden = true;
   }
 
+  function showSetup(suggested) {
+    stopPolling();
+    $('login-view').hidden = true;
+    $('app-view').hidden = true;
+    $('setup-view').hidden = false;
+    if (suggested.suggested_email) $('s-email').value = suggested.suggested_email;
+    if (suggested.suggested_name) $('s-name').value = suggested.suggested_name;
+    ($('s-email').value ? $('s-password') : $('s-email')).focus();
+  }
+
   function showApp(user) {
     me = user;
+    $('setup-view').hidden = true;
     $('login-view').hidden = true;
     $('app-view').hidden = false;
     $('who').textContent = `${user.name} · ${user.email}`;
@@ -100,6 +112,29 @@
         body: { email: $('login-email').value, password: $('login-password').value },
       });
       $('login-password').value = '';
+      showApp(user);
+      await boot();
+    } catch (e2) {
+      err.textContent = e2.message;
+      err.hidden = false;
+    }
+  });
+
+  $('setup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = $('setup-error');
+    err.hidden = true;
+    try {
+      const { user } = await api('/api/auth/setup', {
+        method: 'POST',
+        bounceOn401: false,
+        body: {
+          email: $('s-email').value,
+          name: $('s-name').value,
+          password: $('s-password').value,
+        },
+      });
+      $('s-password').value = '';
       showApp(user);
       await boot();
     } catch (e2) {
@@ -582,11 +617,19 @@
 
   (async function start() {
     try {
-      const { user } = await api('/api/auth/me');
+      const { user } = await api('/api/auth/me', { bounceOn401: false });
       showApp(user);
       await boot();
+      return;
     } catch {
-      showLogin();
+      // not signed in — fall through
     }
+    try {
+      const setup = await api('/api/auth/needs-setup', { bounceOn401: false });
+      if (setup.needs_setup) return showSetup(setup);
+    } catch {
+      // if that check fails, the login form is the safe default
+    }
+    showLogin();
   })();
 })();

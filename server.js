@@ -103,7 +103,14 @@ const kit = new Kit({
  */
 function seedAdmin() {
   const email = (process.env.ADMIN_EMAIL || '').trim();
-  if (!email) return;
+  // Say so rather than returning silently: a boot log that shows neither an
+  // account nor a reason is impossible to diagnose from the outside.
+  if (!email) {
+    if (store.countFacilitators() === 0) {
+      console.log('  ADMIN_EMAIL is not set — no account will be seeded.');
+    }
+    return;
+  }
 
   const existing = store.facilitatorByEmail(email);
   if (existing) {
@@ -227,6 +234,57 @@ if (MODE === 'lan') {
 app.get('/admin/login', (_req, res) => res.sendFile(view('admin')));
 app.get('/admin', auth.requireAuth, (_req, res) => res.sendFile(view('admin')));
 app.get('/admin/*', auth.requireAuth, (_req, res) => res.sendFile(view('admin')));
+
+/**
+ * First-run setup.
+ *
+ * A fresh instance has no accounts, and the ways in all assume something the
+ * operator may not have: shell access, or environment variables that only
+ * reach the service if it was created from the Blueprint. So while — and only
+ * while — the facilitator table is empty, /admin offers to create the first
+ * admin. The moment any account exists this closes permanently.
+ */
+const setupOpen = () => store.countFacilitators() === 0;
+
+app.get('/api/auth/needs-setup', (_req, res) => {
+  res.json({
+    needs_setup: setupOpen(),
+    // Prefilled when the operator did set ADMIN_EMAIL but the seed never ran.
+    suggested_email: setupOpen() ? (process.env.ADMIN_EMAIL || '').trim() || null : null,
+    suggested_name: setupOpen() ? (process.env.ADMIN_NAME || '').trim() || null : null,
+  });
+});
+
+app.post('/api/auth/setup', (req, res) => {
+  if (!setupOpen()) {
+    return res.status(409).json({
+      error: 'This instance already has an account. Sign in, or ask an admin to add you.',
+    });
+  }
+  const { email, name, password } = req.body || {};
+  const clean = String(email || '').trim().toLowerCase();
+
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) {
+    return res.status(400).json({ error: 'That does not look like an email address.' });
+  }
+  if (!String(name || '').trim()) return res.status(400).json({ error: 'A name is required.' });
+  if (String(password || '').length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+
+  const user = store.createFacilitator({
+    email: clean,
+    name: String(name).trim(),
+    passwordHash: hashPassword(password),
+    isAdmin: true,
+  });
+  console.log(`✓ first admin created via setup: ${user.email} (${user.name})`);
+  auth.login(res, user.id);
+  res.status(201).json({
+    ok: true,
+    user: { name: user.name, email: user.email, is_admin: true },
+  });
+});
 
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body || {};
@@ -767,8 +825,13 @@ if (require.main === module) {
       console.log(`  admin       http://localhost:${PORT}/admin`);
       console.log(`  data dir    ${DATA_DIR}`);
       if (store.countFacilitators() === 0) {
-        console.log('\n  ⚠ No facilitator accounts yet. Create one:');
-        console.log('      npm run create-user -- "you@example.com" "Your Name"\n');
+        // Deliberately the first thing suggested: it needs no shell, no env
+        // var, and no redeploy. The other routes are fallbacks.
+        console.log('\n  ⚠ No facilitator accounts yet — this instance is unclaimed.');
+        console.log('      Open /admin and create the first admin account now.');
+        console.log('      That form is available ONLY while zero accounts exist.\n');
+        console.log('    Alternatives: set ADMIN_EMAIL (+ ADMIN_PASSWORD) and redeploy,');
+        console.log('    or run:  npm run create-user -- "you@example.com" "Your Name"\n');
       } else {
         console.log('');
       }
