@@ -1,21 +1,40 @@
+# ---------------------------------------------------------------- prod deps
 # better-sqlite3 is a native module, so build it against the same Node that
 # will run it. Debian slim rather than Alpine: the prebuilt binaries are glibc.
-FROM node:22-slim AS build
+FROM node:22-slim AS deps
 WORKDIR /app
-
-# Toolchain only in this stage; the runtime image carries none of it.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 make g++ \
  && rm -rf /var/lib/apt/lists/*
-
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
+# ---------------------------------------------------------------- paper kit
+# The thirteen printable documents are generated HERE, from the same commit
+# that produced content/*.json. That is what makes the admin panel's "kit
+# matches this server" badge a fact rather than a hope: both halves of the
+# pipeline run once, together, from one matrix.
+#
+# python3-openpyxl from apt rather than pip: Debian marks its Python
+# externally-managed (PEP 668), and the apt package is exactly what we need.
+FROM node:22-slim AS kit
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      python3 python3-openpyxl make g++ \
+ && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+RUN npm ci                                  # includes docx, the renderer
+COPY tools ./tools
+COPY content ./content
+RUN mkdir -p kit && npm run kit
+
+# ---------------------------------------------------------------- runtime
 FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=kit  /app/kit ./kit
 COPY package.json ./
 COPY server.js ./
 COPY lib ./lib
@@ -23,8 +42,10 @@ COPY content ./content
 COPY public ./public
 COPY scripts ./scripts
 
-# DATA_DIR is mounted as a persistent disk; nothing durable lives in the image.
+# No python3, no docx, no matrix in the runtime image: the kit is already
+# built, and nothing here regenerates it. Smaller image, no exec surface.
 ENV DATA_DIR=/var/data
+ENV KIT_DIR=/app/kit
 ENV MODE=hosted
 ENV PORT=3000
 EXPOSE 3000

@@ -30,6 +30,8 @@ const { filterState } = require('./lib/visibility');
 const { Store } = require('./lib/db');
 const { makeAuth, hashPassword, verifyPassword } = require('./lib/auth');
 const { SessionRegistry } = require('./lib/sessions');
+const { Kit } = require('./lib/kit');
+const { zip } = require('./lib/zip');
 
 const PORT = Number(process.env.PORT || 3000);
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -79,6 +81,13 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 const store = new Store(path.join(DATA_DIR, 'undercity.db'));
 const auth = makeAuth(store, { secure: SECURE_COOKIES });
 const registry = new SessionRegistry({ store, content, rounds, dataDir: DATA_DIR });
+
+// The printable kit is generated at image-build time from the same commit that
+// produced content/*.json, so it is read-only here and always matches.
+const kit = new Kit({
+  kitDir: process.env.KIT_DIR || path.join(__dirname, 'kit'),
+  contentDir: CONTENT_DIR,
+});
 
 /**
  * LAN mode keeps working without an admin ever logging in: a system
@@ -303,6 +312,31 @@ api.get('/sessions/:code/log', (req, res) => {
   res.type('application/x-ndjson')
      .set('Content-Disposition', `attachment; filename="runlog-${row.run_id}.jsonl"`)
      .send(body);
+});
+
+// -- printable kit ------------------------------------------------------------
+
+api.get('/kit', (_req, res) => res.json(kit.summary()));
+
+api.get('/kit/download/:file', (req, res) => {
+  const found = kit.resolve(req.params.file);
+  if (!found) return res.status(404).json({ error: 'not_found' });
+  res.set('Content-Disposition', `attachment; filename="${found.entry.file}"`);
+  res.type('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.send(fs.readFileSync(found.full));
+});
+
+api.get('/kit/download-all', (req, res) => {
+  const audience = req.query.audience === 'participant' ? 'participant'
+    : req.query.audience === 'facilitator' ? 'facilitator' : null;
+  const entries = kit.entries({ audience });
+  if (!entries.length) return res.status(404).json({ error: 'no_kit' });
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  const label = audience ? `-${audience}` : '';
+  res.set('Content-Disposition', `attachment; filename="undercity-kit${label}-${stamp}.zip"`);
+  res.type('application/zip');
+  res.send(zip(entries));
 });
 
 app.use('/api/admin', api);

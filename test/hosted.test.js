@@ -106,6 +106,54 @@ test('admin routes are closed to anonymous callers', async () => {
   assert.equal(res.json.error, 'unauthorised');
 });
 
+test('the printable kit is closed to anonymous callers', async () => {
+  const anon = makeAgent();
+  // The answer key holds every resolution code in the game; the binders hold
+  // spec values. None of it may be reachable without signing in.
+  for (const url of [
+    '/api/admin/kit',
+    '/api/admin/kit/download/UNDERCITY_AnswerKey.docx',
+    '/api/admin/kit/download/UNDERCITY_Binder_WTR.docx',
+    '/api/admin/kit/download-all',
+    '/api/admin/kit/download-all?audience=facilitator',
+  ]) {
+    assert.equal((await anon(url)).status, 401, `${url} must require auth`);
+  }
+});
+
+test('a signed-in facilitator can read and download the kit', async () => {
+  const agent = makeAgent();
+  await agent('/api/auth/login', {
+    method: 'POST', body: { email: 'facilitator@test.local', password: PASSWORD },
+  });
+
+  const summary = await agent('/api/admin/kit');
+  assert.equal(summary.status, 200);
+  assert.equal(summary.json.available, true);
+  assert.equal(summary.json.sync.status, 'ok');
+  assert.equal(summary.json.counts.documents, 13);
+
+  const one = await agent('/api/admin/kit/download/UNDERCITY_FaultCards.docx');
+  assert.equal(one.status, 200);
+  assert.match(one.headers.get('content-disposition'), /UNDERCITY_FaultCards\.docx/);
+
+  const all = await agent('/api/admin/kit/download-all');
+  assert.equal(all.status, 200);
+  assert.equal(all.headers.get('content-type'), 'application/zip');
+  assert.match(all.headers.get('content-disposition'), /undercity-kit-\d{4}-\d{2}-\d{2}\.zip/);
+});
+
+test('kit downloads refuse a path outside the manifest', async () => {
+  const agent = makeAgent();
+  await agent('/api/auth/login', {
+    method: 'POST', body: { email: 'facilitator@test.local', password: PASSWORD },
+  });
+  for (const attempt of ['MANIFEST.json', 'nope.docx', '..%2F..%2Fserver.js']) {
+    const res = await agent(`/api/admin/kit/download/${attempt}`);
+    assert.equal(res.status, 404, `${attempt} must not resolve`);
+  }
+});
+
 test('a wrong password is refused and reveals nothing', async () => {
   const agent = makeAgent();
   const bad = await agent('/api/auth/login', {

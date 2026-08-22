@@ -53,11 +53,23 @@
   }
 
   function showSection(which) {
-    for (const id of ['list-view', 'create-view', 'detail-view']) {
+    for (const id of ['list-view', 'create-view', 'detail-view', 'kit-view']) {
       $(id).hidden = id !== which;
+    }
+    for (const btn of document.querySelectorAll('.nav button')) {
+      // Create and detail both live under the Sessions tab.
+      const owner = which === 'kit-view' ? 'kit-view' : 'list-view';
+      btn.classList.toggle('on', btn.dataset.nav === owner);
     }
     // Only the list needs to stay fresh; a detail page is edited, not watched.
     if (which === 'list-view') startPolling(); else stopPolling();
+  }
+
+  for (const btn of document.querySelectorAll('.nav button')) {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.nav === 'kit-view') loadKit();
+      else { current = null; loadSessions(); }
+    });
   }
 
   function startPolling() {
@@ -339,6 +351,107 @@
     el.select();
     try { document.execCommand('copy'); done(); } catch { /* nothing else to try */ }
     document.body.removeChild(el);
+  }
+
+  // -- printable kit ----------------------------------------------------------
+
+  const GROUPS = [
+    {
+      key: 'participant',
+      title: 'Participant-facing',
+      blurb: 'Safe to hand out and to leave on a table.',
+    },
+    {
+      key: 'facilitator',
+      title: 'Facilitator only — never leave on a participant table',
+      blurb: 'The answer key carries every resolution code. Each binder carries that '
+           + "sector's own spec values. Print these yourself and keep them with you.",
+    },
+  ];
+
+  const kb = (n) => `${Math.max(1, Math.round(n / 1024))} KB`;
+
+  async function loadKit() {
+    showSection('kit-view');
+    let kit;
+    try {
+      kit = await api('/api/admin/kit');
+    } catch {
+      return;
+    }
+
+    const sync = kit.sync || { status: 'unknown', detail: '' };
+    const icon = { ok: '✓', drift: '✕', unknown: '!' }[sync.status] || '!';
+    const heading = {
+      ok: 'Kit matches this server',
+      drift: 'Kit is out of date — do not print',
+      unknown: 'No kit available',
+    }[sync.status];
+
+    const prov = kit.available && kit.sources
+      ? `<div class="prov">Built ${new Date(kit.generated_at).toLocaleString()} ·
+           ${kit.counts.faults} faults, ${kit.counts.specs} specs ·
+           matrix ${(kit.sources.matrix && kit.sources.matrix.sha256 || '').slice(0, 12)}</div>`
+      : '';
+
+    $('kit-sync').innerHTML = `<div class="sync ${esc(sync.status)}">
+        <span class="icon">${icon}</span>
+        <span class="msg"><b>${esc(heading)}</b>${esc(sync.detail)}${prov}</span>
+      </div>`;
+
+    if (!kit.available) {
+      $('kit-actions').innerHTML = '';
+      $('kit-body').innerHTML = `<div class="empty-state">
+        No documents have been built.<br>
+        The kit is generated during deployment — run <code>npm run kit</code> locally,
+        or redeploy.</div>`;
+      return;
+    }
+
+    $('kit-actions').innerHTML =
+      '<button class="primary" data-all="">DOWNLOAD ALL (.zip)</button>';
+    $('kit-actions').querySelector('button')
+      .addEventListener('click', () => download('/api/admin/kit/download-all'));
+
+    $('kit-body').innerHTML = GROUPS.map((g) => {
+      const docs = kit.files.filter((f) => f.audience === g.key);
+      if (!docs.length) return '';
+      return `<div class="kit-group ${g.key}">
+          <h3>${esc(g.title)}</h3>
+          <div class="blurb">${esc(g.blurb)}</div>
+          <div class="doc-list">
+            ${docs.map((d) => `<div class="doc ${g.key}${d.present ? '' : ' missing'}">
+                <span><span class="t">${esc(d.title)}</span><br><span class="f">${esc(d.file)}</span></span>
+                <span class="sz">${kb(d.bytes)}</span>
+                ${d.present
+                  ? `<button data-file="${esc(d.file)}">DOWNLOAD</button>`
+                  : '<span class="sz">missing</span>'}
+              </div>`).join('')}
+          </div>
+          <div style="margin-top:8px">
+            <button data-group="${g.key}">Download ${esc(g.title.split(' —')[0].toLowerCase())} set (.zip)</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    for (const btn of $('kit-body').querySelectorAll('[data-file]')) {
+      btn.addEventListener('click', () =>
+        download(`/api/admin/kit/download/${encodeURIComponent(btn.dataset.file)}`));
+    }
+    for (const btn of $('kit-body').querySelectorAll('[data-group]')) {
+      btn.addEventListener('click', () =>
+        download(`/api/admin/kit/download-all?audience=${btn.dataset.group}`));
+    }
+  }
+
+  /** Same-origin, cookie-authenticated download. */
+  function download(url) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
   // -- boot -------------------------------------------------------------------

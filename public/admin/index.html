@@ -26,7 +26,11 @@
 <div class="shell" id="app-view" hidden>
   <header class="topbar">
     <div class="left">
-      <h1>UNDERCITY <span class="sub">SESSIONS</span></h1>
+      <h1>UNDERCITY</h1>
+      <nav class="nav">
+        <button data-nav="list-view" class="on">SESSIONS</button>
+        <button data-nav="kit-view">PRINT KIT</button>
+      </nav>
     </div>
     <div class="right">
       <span class="who" id="who"></span>
@@ -67,6 +71,16 @@
         <div class="error" id="create-error" hidden></div>
         <button type="submit" class="primary">CREATE SESSION</button>
       </form>
+    </section>
+
+    <!-- PRINT KIT -->
+    <section id="kit-view" hidden>
+      <div class="section-head">
+        <h2>Printable kit</h2>
+        <div class="head-actions" id="kit-actions"></div>
+      </div>
+      <div id="kit-sync"></div>
+      <div id="kit-body"></div>
     </section>
 
     <!-- DETAIL -->

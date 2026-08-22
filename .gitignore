@@ -4,4 +4,4 @@ snapshot.json
 *.log
 .DS_Store
 data/
-kit/binder_content.json
+build/

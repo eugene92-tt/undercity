@@ -2,9 +2,13 @@ node_modules
 data
 runlog*.jsonl
 snapshot.json
+
+# kit/ is deliberately NOT copied in: the build regenerates it from the matrix
+# in this same commit, so a stale committed document can never ship.
+kit
+
 test
 docs
-tools
 .git
 .github
 *.md

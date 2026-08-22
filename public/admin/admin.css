@@ -108,3 +108,41 @@ body { overflow: auto; }
   .row2, .links { grid-template-columns: 1fr; }
   .team-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* -- nav -------------------------------------------------------------------- */
+
+.nav { display: flex; gap: 4px; margin-left: 18px; }
+.nav button { font-size: 10px; letter-spacing: 0.14em; padding: 5px 12px; }
+.nav button.on { background: var(--amber); color: #17130a; border-color: var(--amber); font-weight: 700; }
+
+/* -- print kit -------------------------------------------------------------- */
+
+.sync { border: 1px solid var(--line); padding: 12px 15px; margin-bottom: 16px; display: flex; gap: 12px; }
+.sync .icon { font-size: 17px; line-height: 1.2; }
+.sync .msg { font-size: 12px; line-height: 1.6; }
+.sync .msg b { display: block; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px; }
+.sync.ok      { border-color: #1e4326; background: #101a13; }
+.sync.ok      .msg b { color: var(--green); }
+.sync.drift   { border-color: var(--red); background: #1c1011; }
+.sync.drift   .msg b { color: var(--red); }
+.sync.unknown { border-color: #4a3a12; background: #1a160c; }
+.sync.unknown .msg b { color: var(--amber); }
+.sync .prov { font-size: 10px; color: var(--ink-faint); margin-top: 6px; }
+
+.kit-group { margin-bottom: 18px; }
+.kit-group > h3 { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 4px; }
+.kit-group.participant > h3 { color: var(--green); }
+.kit-group.facilitator > h3 { color: var(--red); }
+.kit-group .blurb { font-size: 11px; color: var(--ink-faint); line-height: 1.6; margin-bottom: 9px; }
+.kit-group.facilitator .blurb { color: #E8A0A0; }
+
+.doc-list { display: flex; flex-direction: column; gap: 5px; }
+.doc { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+       background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; }
+.doc.facilitator { border-left: 3px solid var(--red); }
+.doc.participant { border-left: 3px solid var(--green); }
+.doc .t { font-size: 12px; }
+.doc .f { font-size: 10px; color: var(--ink-faint); font-family: var(--mono); }
+.doc .sz { font-size: 10px; color: var(--ink-faint); }
+.doc.missing { opacity: 0.45; }
+.doc button { padding: 4px 10px; font-size: 10px; }

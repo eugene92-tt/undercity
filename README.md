@@ -129,7 +129,9 @@ public/admin           session management (hosted mode)
 scripts/create-user.js facilitator accounts
 tools/                 workbook generator, the matrix itself, and the exporter
 tools/kit/             paper-kit generators (binders, cards, charter, guides)
-kit/                   the generated documents, ready to print
+kit/                   the generated documents + MANIFEST.json, ready to print
+lib/kit.js             manifest reading, audience split, paper/server sync check
+lib/zip.js             minimal STORE-method zip writer for download-all
 test/                  unit, visibility, integration and resilience suites
 ```
 
@@ -171,6 +173,36 @@ accepted an uncalculated workbook, are recorded in **`CONTENT-ISSUES.md`**.
 ---
 
 ## The paper kit
+
+### Getting the documents
+
+Sign in to `/admin` → **PRINT KIT**. Every document is downloadable
+individually, as a participant-facing set, as a facilitator-only set, or all
+thirteen as one zip.
+
+The page splits them deliberately:
+
+| Group | Documents | Rule |
+|---|---|---|
+| **Participant-facing** | fault cards, City Charter, role cards, transfer chits, consent pack + table tents | safe to hand out and leave on a table |
+| **Facilitator only** | answer key, six sector binders, the Guidebook | never leave on a participant table |
+
+A badge at the top says whether the kit matches the content the server is
+actually running. It is not a guess: the manifest records the SHA-256 of every
+content file at the moment the documents were built, and the server re-hashes
+its own content and compares. Green means printing is safe; red means the kit
+predates a content change and printing it risks handing teams values the
+server will reject.
+
+That guarantee comes from **where** generation happens. The kit is built during
+the Docker build, in a stage that runs the generators against the same matrix
+and the same `content/*.json` that ship in the image. Paper and server come out
+of one build, together. There is deliberately no "regenerate" button and no
+Python in the runtime image — nothing on the server can produce a document that
+disagrees with the game it is serving. To change the kit, change the matrix and
+redeploy.
+
+### Rebuilding locally
 
 `npm run kit` regenerates all thirteen documents: six sector binders, the fault
 card deck, the facilitator answer key, the City Charter and Continuity Order,
