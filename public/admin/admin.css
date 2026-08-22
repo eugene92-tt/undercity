@@ -146,3 +146,29 @@ body { overflow: auto; }
 .doc .sz { font-size: 10px; color: var(--ink-faint); }
 .doc.missing { opacity: 0.45; }
 .doc button { padding: 4px 10px; font-size: 10px; }
+
+/* -- facilitators ----------------------------------------------------------- */
+
+.chkline { display: flex; align-items: center; gap: 8px; }
+.chkline input { width: auto; margin: 0; }
+.chkline span { text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--ink); }
+
+.people-table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); }
+.people-table th { text-align: left; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+                   color: var(--ink-faint); padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.people-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 12px; }
+.people-table tr:last-child td { border-bottom: none; }
+.people-table .nm { font-weight: 600; }
+.people-table .em { font-size: 11px; color: var(--ink-faint); }
+.people-table td.actions { text-align: right; white-space: nowrap; }
+.people-table td.actions button { padding: 3px 8px; font-size: 10px; margin-left: 4px; }
+.badge { font-size: 9px; letter-spacing: 0.14em; padding: 2px 7px; border: 1px solid var(--line); color: var(--ink-dim); }
+.badge.admin { background: var(--amber); color: #17130a; border-color: var(--amber); font-weight: 700; }
+.badge.you { border-color: var(--green); color: var(--green); }
+
+.notice { border: 1px solid var(--green); background: #101a13; padding: 12px 15px; margin-bottom: 14px; }
+.notice b { display: block; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--green); margin-bottom: 5px; }
+.notice .pw { font-size: 15px; letter-spacing: 0.08em; color: var(--ink); background: #0c1013;
+              border: 1px solid var(--line); padding: 6px 10px; display: inline-block; margin: 4px 0; }
+.notice .sub { font-size: 11px; color: var(--ink-faint); }

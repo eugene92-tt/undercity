@@ -90,6 +90,51 @@ const kit = new Kit({
 });
 
 /**
+ * Seed the master admin from the environment.
+ *
+ * Accounts live in SQLite on the persistent disk and survive redeploys — a
+ * deploy replaces the image, not the disk. This exists so the FIRST deploy
+ * needs no shell access: if ADMIN_EMAIL names an account that does not exist
+ * yet, it is created.
+ *
+ * An existing account is never touched. Silently resetting a password on every
+ * redeploy would undo any change made since, and would mean the env var, not
+ * the person, owns the account.
+ */
+function seedAdmin() {
+  const email = (process.env.ADMIN_EMAIL || '').trim();
+  if (!email) return;
+
+  const existing = store.facilitatorByEmail(email);
+  if (existing) {
+    // Make sure the named master admin is actually an admin, but leave the
+    // password alone.
+    if (!existing.is_admin) {
+      store.setAdmin(existing.id, true);
+      console.log(`✓ ${existing.email} promoted to admin`);
+    }
+    return;
+  }
+
+  const name = (process.env.ADMIN_NAME || '').trim() || email.split('@')[0];
+  const supplied = process.env.ADMIN_PASSWORD;
+  // Never block a first deploy for want of a password: generate one and print
+  // it once. It is shown only on the boot that created the account.
+  const password = supplied || require('crypto').randomBytes(12).toString('base64url');
+
+  const user = store.createFacilitator({
+    email, name, passwordHash: hashPassword(password), isAdmin: true,
+  });
+  console.log(`\n✓ created master admin ${user.email} (${user.name})`);
+  if (!supplied) {
+    console.log(`  temporary password: ${password}`);
+    console.log('  Shown once. Sign in and change it, or set ADMIN_PASSWORD.\n');
+  }
+}
+
+if (MODE === 'hosted') seedAdmin();
+
+/**
  * LAN mode keeps working without an admin ever logging in: a system
  * facilitator and one standing session are created on first boot.
  */
@@ -312,6 +357,104 @@ api.get('/sessions/:code/log', (req, res) => {
   res.type('application/x-ndjson')
      .set('Content-Disposition', `attachment; filename="runlog-${row.run_id}.jsonl"`)
      .send(body);
+});
+
+// -- facilitators (admin only) ------------------------------------------------
+
+/**
+ * Only an admin manages accounts. Without this, is_admin would be decoration
+ * and every new facilitator would need shell access to the server.
+ */
+function requireAdmin(req, res, next) {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'Admins only.' });
+  next();
+}
+
+const publicUser = (u) => ({
+  id: u.id,
+  email: u.email,
+  name: u.name,
+  is_admin: !!u.is_admin,
+  created_at: u.created_at,
+  last_login_at: u.last_login_at,
+  sessions_owned: store.countSessionsOwned(u.id),
+});
+
+api.get('/facilitators', requireAdmin, (_req, res) => {
+  res.json({ facilitators: store.listFacilitators().map(publicUser) });
+});
+
+api.post('/facilitators', requireAdmin, (req, res) => {
+  const { email, name, password, is_admin: isAdmin } = req.body || {};
+  const clean = String(email || '').trim().toLowerCase();
+
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) {
+    return res.status(400).json({ error: 'That does not look like an email address.' });
+  }
+  if (!String(name || '').trim()) return res.status(400).json({ error: 'A name is required.' });
+  if (store.facilitatorByEmail(clean)) {
+    return res.status(409).json({ error: 'That email already has an account.' });
+  }
+  if (password && String(password).length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+
+  // A generated password is returned ONCE, for the admin to pass on.
+  const generated = password ? null : require('crypto').randomBytes(9).toString('base64url');
+  const user = store.createFacilitator({
+    email: clean,
+    name: String(name).trim(),
+    passwordHash: hashPassword(password || generated),
+    isAdmin: !!isAdmin,
+  });
+  res.status(201).json({ facilitator: publicUser(user), generated_password: generated });
+});
+
+api.post('/facilitators/:id/password', requireAdmin, (req, res) => {
+  const user = store.facilitatorById(Number(req.params.id));
+  if (!user) return res.status(404).json({ error: 'not_found' });
+
+  const supplied = (req.body || {}).password;
+  if (supplied && String(supplied).length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+  const generated = supplied ? null : require('crypto').randomBytes(9).toString('base64url');
+  store.setPassword(user.id, hashPassword(supplied || generated));
+  res.json({ ok: true, generated_password: generated });
+});
+
+api.post('/facilitators/:id/admin', requireAdmin, (req, res) => {
+  const user = store.facilitatorById(Number(req.params.id));
+  if (!user) return res.status(404).json({ error: 'not_found' });
+  const makeAdmin = !!(req.body || {}).is_admin;
+
+  // Never leave the platform with nobody who can manage it.
+  if (!makeAdmin && user.is_admin && store.countAdmins() <= 1) {
+    return res.status(409).json({ error: 'This is the last admin — promote someone else first.' });
+  }
+  store.setAdmin(user.id, makeAdmin);
+  res.json({ facilitator: publicUser(store.facilitatorById(user.id)) });
+});
+
+api.delete('/facilitators/:id', requireAdmin, (req, res) => {
+  const user = store.facilitatorById(Number(req.params.id));
+  if (!user) return res.status(404).json({ error: 'not_found' });
+
+  if (user.id === req.user.id) {
+    return res.status(409).json({ error: 'You cannot remove your own account.' });
+  }
+  if (user.is_admin && store.countAdmins() <= 1) {
+    return res.status(409).json({ error: 'This is the last admin — promote someone else first.' });
+  }
+  const owned = store.countSessionsOwned(user.id);
+  if (owned > 0) {
+    return res.status(409).json({
+      error: `${user.name} owns ${owned} session${owned > 1 ? 's' : ''}. ` +
+             'Delete or reassign them first so the run history keeps its author.',
+    });
+  }
+  store.deleteFacilitator(user.id);
+  res.json({ ok: true });
 });
 
 // -- printable kit ------------------------------------------------------------

@@ -70,6 +70,10 @@ npm test                                              # 78 tests, ~25s
 | `PORT` | `3000` | |
 | `FACILITATOR_TOKEN` | `haven9` | LAN mode control-panel token |
 | `SECURE_COOKIES` | on when `NODE_ENV=production` | `Secure` flag on the admin cookie |
+| `ADMIN_EMAIL` | — | hosted mode: seed this master admin on first boot |
+| `ADMIN_NAME` | local part of the email | display name for the seeded admin |
+| `ADMIN_PASSWORD` | generated and logged once | password for the seeded admin only |
+| `KIT_DIR` | `./kit` | where the printable documents live |
 | `RUNLOG_PATH` / `SNAPSHOT_PATH` | under `DATA_DIR` | LAN mode only |
 
 ---
@@ -81,11 +85,30 @@ service with a persistent disk.
 
 1. Push the repo and point Render at the blueprint.
 2. Render provisions a 5 GB disk at `/var/data` — SQLite and the run logs.
-3. Once live, open a shell on the service and create your first account:
-   ```
-   npm run create-user -- you@example.com "Your Name"
-   ```
-4. Sign in at `https://<your-service>/admin`.
+3. Set `ADMIN_PASSWORD` in the Render dashboard (it is `sync: false`, so it is
+   never committed). Leave it unset and the first boot generates one and prints
+   it to the deploy log, once.
+4. Sign in at `https://<your-service>/admin` as `ADMIN_EMAIL`.
+
+### Accounts survive deploys
+
+A deploy replaces the **image** — code and the printable kit. Accounts, sessions
+and run logs live in `/var/data` on the persistent disk, which is mounted over
+the image and left alone. Redeploy as often as you like.
+
+`ADMIN_EMAIL` / `ADMIN_NAME` / `ADMIN_PASSWORD` only seed the master admin **if
+that account does not exist yet**. An existing account is never modified, so a
+password changed in the app is not silently reverted by the next deploy. The
+"No facilitator accounts yet" line appears only on a first boot against an
+empty disk.
+
+After that, add people in the app: **FACILITATORS** (admin only) creates
+accounts, resets passwords, and grants or revokes admin. Generated passwords
+are shown exactly once. Two guards stop a lockout: the last admin cannot be
+demoted or removed, and nobody can delete their own account. A facilitator who
+still owns sessions cannot be removed either, so run history keeps its author.
+
+`npm run create-user` still works from a Render shell if you ever need it.
 
 **Do not raise `numInstances` above 1.** Game state is authoritative in memory
 and broadcast to every client of a session (contract §0.1–0.2). A second

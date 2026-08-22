@@ -32,3 +32,16 @@ services:
         value: /var/data
       - key: SECURE_COOKIES
         value: "1"
+
+      # Master admin, seeded on first boot if the account does not exist yet.
+      # Accounts live on the persistent disk and survive redeploys; this only
+      # saves you needing shell access for the very first sign-in. An existing
+      # account is never modified, so changing the password in the app sticks.
+      - key: ADMIN_EMAIL
+        value: eugene@thrivingtalents.com
+      - key: ADMIN_NAME
+        value: Eugene Phuah
+      # Set this in the Render dashboard, not here. Leave it unset and the
+      # first boot generates one and prints it to the deploy log, once.
+      - key: ADMIN_PASSWORD
+        sync: false

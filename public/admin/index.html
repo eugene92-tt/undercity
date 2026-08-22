@@ -30,6 +30,7 @@
       <nav class="nav">
         <button data-nav="list-view" class="on">SESSIONS</button>
         <button data-nav="kit-view">PRINT KIT</button>
+        <button data-nav="people-view" id="nav-people" hidden>FACILITATORS</button>
       </nav>
     </div>
     <div class="right">
@@ -81,6 +82,33 @@
       </div>
       <div id="kit-sync"></div>
       <div id="kit-body"></div>
+    </section>
+
+    <!-- FACILITATORS (admin only) -->
+    <section id="people-view" hidden>
+      <div class="section-head">
+        <h2>Facilitators</h2>
+        <button class="primary" id="btn-add-person">+ ADD FACILITATOR</button>
+      </div>
+      <div id="person-notice"></div>
+      <form class="panel form" id="person-form" hidden>
+        <div class="row2">
+          <label>Email <input type="email" id="p-email" required></label>
+          <label>Name <input type="text" id="p-name" required></label>
+        </div>
+        <div class="row2">
+          <label>Password <em>leave blank to generate one</em>
+            <input type="password" id="p-password" autocomplete="new-password"></label>
+          <label class="chkline"><input type="checkbox" id="p-admin">
+            <span>Can manage facilitators</span></label>
+        </div>
+        <div class="error" id="person-error" hidden></div>
+        <div class="head-actions">
+          <button type="submit" class="primary">CREATE</button>
+          <button type="button" id="btn-cancel-person">CANCEL</button>
+        </div>
+      </form>
+      <div id="people"></div>
     </section>
 
     <!-- DETAIL -->

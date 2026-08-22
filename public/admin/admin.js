@@ -16,6 +16,7 @@
   let meta = null;
   let current = null;
   let pollTimer = null;
+  let me = null;
 
   // -- transport --------------------------------------------------------------
 
@@ -47,18 +48,22 @@
   }
 
   function showApp(user) {
+    me = user;
     $('login-view').hidden = true;
     $('app-view').hidden = false;
     $('who').textContent = `${user.name} · ${user.email}`;
+    // Account management is admin-only, so the tab only exists for admins.
+    $('nav-people').hidden = !user.is_admin;
   }
 
   function showSection(which) {
-    for (const id of ['list-view', 'create-view', 'detail-view', 'kit-view']) {
+    for (const id of ['list-view', 'create-view', 'detail-view', 'kit-view', 'people-view']) {
       $(id).hidden = id !== which;
     }
     for (const btn of document.querySelectorAll('.nav button')) {
       // Create and detail both live under the Sessions tab.
-      const owner = which === 'kit-view' ? 'kit-view' : 'list-view';
+      const owner = which === 'kit-view' ? 'kit-view'
+        : which === 'people-view' ? 'people-view' : 'list-view';
       btn.classList.toggle('on', btn.dataset.nav === owner);
     }
     // Only the list needs to stay fresh; a detail page is edited, not watched.
@@ -68,6 +73,7 @@
   for (const btn of document.querySelectorAll('.nav button')) {
     btn.addEventListener('click', () => {
       if (btn.dataset.nav === 'kit-view') loadKit();
+      else if (btn.dataset.nav === 'people-view') loadPeople();
       else { current = null; loadSessions(); }
     });
   }
@@ -452,6 +458,119 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
+  }
+
+  // -- facilitators (admin only) ----------------------------------------------
+
+  $('btn-add-person').addEventListener('click', () => {
+    $('person-form').reset();
+    $('person-error').hidden = true;
+    $('person-form').hidden = false;
+    $('p-email').focus();
+  });
+  $('btn-cancel-person').addEventListener('click', () => { $('person-form').hidden = true; });
+
+  $('person-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = $('person-error');
+    err.hidden = true;
+    try {
+      const res = await api('/api/admin/facilitators', {
+        method: 'POST',
+        body: {
+          email: $('p-email').value,
+          name: $('p-name').value,
+          password: $('p-password').value || undefined,
+          is_admin: $('p-admin').checked,
+        },
+      });
+      $('person-form').hidden = true;
+      showPassword(res.facilitator, res.generated_password, 'created');
+      await loadPeople({ keepNotice: true });
+    } catch (e2) {
+      err.textContent = e2.message;
+      err.hidden = false;
+    }
+  });
+
+  /** A generated password is shown once — there is no way to read it back. */
+  function showPassword(user, password, verb) {
+    if (!password) {
+      $('person-notice').innerHTML =
+        `<div class="notice"><b>${esc(user.name)} ${esc(verb)}</b>
+           <span class="sub">They can sign in with the password you set.</span></div>`;
+      return;
+    }
+    $('person-notice').innerHTML = `<div class="notice">
+        <b>${esc(user.name || 'Password reset')} ${esc(verb)}</b>
+        <div class="pw">${esc(password)}</div>
+        <div class="sub">Shown once — copy it now and pass it on.
+          Nobody, including you, can read it back afterwards.</div>
+      </div>`;
+  }
+
+  async function loadPeople({ keepNotice = false } = {}) {
+    showSection('people-view');
+    if (!keepNotice) $('person-notice').innerHTML = '';
+
+    let data;
+    try {
+      data = await api('/api/admin/facilitators');
+    } catch (e) {
+      $('people').innerHTML = `<div class="empty-state">${esc(e.message)}</div>`;
+      return;
+    }
+
+    $('people').innerHTML = `<table class="people-table">
+        <thead><tr><th>Facilitator</th><th>Role</th><th>Sessions</th><th>Last sign-in</th><th></th></tr></thead>
+        <tbody>${data.facilitators.map((u) => {
+          const isMe = me && u.email === me.email;
+          return `<tr data-id="${u.id}">
+            <td><span class="nm">${esc(u.name)}</span>
+                ${isMe ? '<span class="badge you">YOU</span>' : ''}<br>
+                <span class="em">${esc(u.email)}</span></td>
+            <td>${u.is_admin ? '<span class="badge admin">ADMIN</span>'
+                             : '<span class="badge">FACILITATOR</span>'}</td>
+            <td>${u.sessions_owned}</td>
+            <td class="em">${u.last_login_at
+              ? new Date(u.last_login_at).toLocaleDateString() : 'never'}</td>
+            <td class="actions">
+              <button data-reset="${u.id}">RESET PASSWORD</button>
+              <button data-admin="${u.id}" data-to="${u.is_admin ? '0' : '1'}">
+                ${u.is_admin ? 'REVOKE ADMIN' : 'MAKE ADMIN'}</button>
+              ${isMe ? '' : `<button class="danger" data-del="${u.id}">REMOVE</button>`}
+            </td></tr>`;
+        }).join('')}</tbody></table>`;
+
+    for (const btn of $('people').querySelectorAll('[data-reset]')) {
+      btn.addEventListener('click', async () => {
+        const row = btn.closest('tr');
+        const name = row.querySelector('.nm').textContent;
+        if (!confirm(`Reset the password for ${name}? Their current one stops working.`)) return;
+        const res = await api(`/api/admin/facilitators/${btn.dataset.reset}/password`, { method: 'POST' });
+        showPassword({ name }, res.generated_password, '— password reset');
+      });
+    }
+    for (const btn of $('people').querySelectorAll('[data-admin]')) {
+      btn.addEventListener('click', async () => {
+        try {
+          await api(`/api/admin/facilitators/${btn.dataset.admin}/admin`, {
+            method: 'POST', body: { is_admin: btn.dataset.to === '1' },
+          });
+          await loadPeople();
+        } catch (e) { alert(e.message); }
+      });
+    }
+    for (const btn of $('people').querySelectorAll('[data-del]')) {
+      btn.addEventListener('click', async () => {
+        const name = btn.closest('tr').querySelector('.nm').textContent;
+        if (!confirm(`Remove ${name}? They lose access immediately.`)) return;
+        try {
+          await api(`/api/admin/facilitators/${btn.dataset.del}`, { method: 'DELETE' });
+          await loadPeople();
+        } catch (e) { alert(e.message); }
+      });
+    }
   }
 
   // -- boot -------------------------------------------------------------------
