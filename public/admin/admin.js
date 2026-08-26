@@ -612,7 +612,34 @@
 
   async function boot() {
     meta = await api('/api/admin/meta');
+    renderStorageWarning(meta.storage);
     await loadSessions();
+  }
+
+  /**
+   * If the data directory will not survive a restart, say so on every page.
+   * Losing accounts and run logs silently is the worst thing this platform
+   * can do, so this is not tucked into a settings screen.
+   */
+  function renderStorageWarning(storage) {
+    const host = $('storage-warning');
+    if (!storage || (storage.verdict !== 'ephemeral' && storage.verdict !== 'unwritable')) {
+      host.innerHTML = '';
+      return;
+    }
+    const unwritable = storage.verdict === 'unwritable';
+    host.innerHTML = `<div class="storage-warn">
+        <span class="ic">${unwritable ? '✕' : '⚠'}</span>
+        <span class="txt">
+          <b>${unwritable
+            ? 'Data directory is not writable'
+            : 'Storage is temporary — everything here will be lost on restart'}</b>
+          ${esc(storage.detail)}
+          <span class="fix">Attach a persistent disk to this service and mount it at
+            <code>${esc(storage.dir)}</code>. On Render that needs a paid instance;
+            free instances cannot have a disk and spin down when idle.</span>
+        </span>
+      </div>`;
   }
 
   (async function start() {

@@ -99,6 +99,28 @@ redeploy. The other two routes are fallbacks:
   instead. If `ADMIN_EMAIL` is unset the boot log now says so explicitly.
 - **Shell.** `npm run create-user -- you@example.com "Your Name"`.
 
+### ⚠️ Attach a persistent disk, or you will lose everything
+
+Accounts, sessions and run logs all live in `DATA_DIR`. On a container host
+that directory only survives a restart if a **disk is mounted over it**.
+Without one the app runs perfectly, writes happily, and loses the lot the next
+time the container is replaced.
+
+`render.yaml` declares the disk — but like the env vars, it applies **only to a
+service created from the Blueprint**. A service created by hand in the
+dashboard has no disk until you add one there:
+
+> Render → your service → **Disks** → Add Disk → mount path `/var/data`
+
+A disk requires a **paid** instance. Free instances cannot have one, and they
+also spin down when idle — which is what a restart that loses data looks like.
+
+The server checks this itself. If `DATA_DIR` is not on a mounted disk the boot
+log carries a loud banner, `/healthz` reports
+`storage.verdict: "ephemeral"`, and the admin panel shows a red banner on every
+page. Once data has survived one restart the check reports `persistent` and
+says so — that is proof, not inference, because the ledger it writes came back.
+
 ### Accounts survive deploys
 
 A deploy replaces the **image** — code and the printable kit. Accounts, sessions

@@ -31,6 +31,7 @@ const { Store } = require('./lib/db');
 const { makeAuth, hashPassword, verifyPassword } = require('./lib/auth');
 const { SessionRegistry } = require('./lib/sessions');
 const { Kit } = require('./lib/kit');
+const { inspectStorage, reportStorage } = require('./lib/storage');
 const { zip } = require('./lib/zip');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -78,6 +79,10 @@ console.log(
 // -- storage ------------------------------------------------------------------
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+
+// Before anything is written: will any of it still be here after a restart?
+const storage = inspectStorage(DATA_DIR);
+
 const store = new Store(path.join(DATA_DIR, 'undercity.db'));
 const auth = makeAuth(store, { secure: SECURE_COOKIES });
 const registry = new SessionRegistry({ store, content, rounds, dataDir: DATA_DIR });
@@ -310,6 +315,13 @@ api.use(auth.requireAuth);
 
 api.get('/meta', (_req, res) => {
   res.json({
+    storage: {
+      verdict: storage.verdict,
+      detail: storage.detail,
+      dir: storage.dir,
+      boots: storage.boots,
+      first_boot_at: storage.first_boot_at,
+    },
     sectors: SECTOR_CODES.map((code) => ({
       code, name: content.sectors.sectors[code].name, colour: content.sectors.sectors[code].colour,
     })),
@@ -562,7 +574,14 @@ app.get('/api/log', (req, res) => {
 });
 
 app.get('/healthz', (_req, res) => res.json({
-  ok: true, mode: MODE, live_sessions: registry.liveCodes().length,
+  ok: true,
+  mode: MODE,
+  live_sessions: registry.liveCodes().length,
+  storage: {
+    verdict: storage.verdict,
+    boots: storage.boots,
+    first_boot_at: storage.first_boot_at,
+  },
 }));
 
 app.get('/', (_req, res) => res.redirect(MODE === 'lan' ? '/bigscreen' : '/admin'));
@@ -816,6 +835,7 @@ for (const signal of ['SIGTERM', 'SIGINT']) {
 
 if (require.main === module) {
   server.listen(PORT, () => {
+    reportStorage(storage);
     console.log(`\nUNDERCITY — HAVEN-9  [${MODE} mode]`);
     if (MODE === 'lan') {
       console.log(`  sector      http://localhost:${PORT}/sector/POW`);

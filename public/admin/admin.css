@@ -181,3 +181,14 @@ body { overflow: auto; }
 .login-card label em {
   font-style: normal; text-transform: none; letter-spacing: 0; opacity: 0.7;
 }
+
+/* ephemeral-storage banner — deliberately impossible to miss */
+.storage-warn {
+  background: #2a0f10; border-bottom: 2px solid var(--red);
+  padding: 13px 22px; display: flex; gap: 13px; align-items: flex-start;
+}
+.storage-warn .ic { font-size: 18px; line-height: 1.1; color: var(--red); }
+.storage-warn b { display: block; font-size: 11px; letter-spacing: 0.16em;
+                  text-transform: uppercase; color: var(--red); margin-bottom: 4px; }
+.storage-warn .txt { font-size: 12px; line-height: 1.65; color: var(--ink); }
+.storage-warn .fix { font-size: 11px; color: var(--ink-dim); margin-top: 6px; }
