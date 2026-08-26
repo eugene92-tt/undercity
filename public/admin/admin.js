@@ -163,6 +163,7 @@
     if (!data.sessions.length) {
       host.innerHTML = `<div class="empty-state">
         No sessions yet.<br>Create one, name the six tables, then hand each table its join link.</div>`;
+      if (!quiet) showSection('list-view');
       return;
     }
 
